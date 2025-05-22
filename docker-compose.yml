@@ -1,0 +1,12 @@
+services:
+  dbms:
+    image: postgres:15
+    container_name: postgres
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: bho # da cambiare con db creato dal container
+    volumes:
+      - hostPath:containerPath:ro  # da cambiare con volume db
+    ports:
+      - "5432:5432"
