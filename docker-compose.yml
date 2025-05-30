@@ -1,12 +1,87 @@
+version: '3.8'
+ 
 services:
-  dbms:
+  db:
     image: postgres:15
-    container_name: postgres
+    container_name: zta_postgres
+    restart: always
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: bho # da cambiare con db creato dal container
+      POSTGRES_USER: zta
+      POSTGRES_PASSWORD: zta_pw
+      POSTGRES_DB: zta_db
     volumes:
-      - hostPath:containerPath:ro  # da cambiare con volume db
+      - ./db/init_tables.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
+ 
+  pep:
+    build: ./pep
+    container_name: zta_pep
+    depends_on:
+      - db
+    ports:
+      - "8002:8002"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=zta_db
+      - DB_USER=zta
+      - DB_PASSWORD=zta_pw
+ 
+  pdp:
+    build: ./pdp
+    container_name: zta_pdp
+    depends_on:
+      - db
+      - splunk
+    ports:
+      - "8001:8001"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=zta_db
+      - DB_USER=zta
+      - DB_PASSWORD=zta_pw
+      - SPLUNK_HOST=splunk
+      - SPLUNK_PORT=8088
+ 
+  iptables:
+    image: ubuntu
+    container_name: zta_iptables
+    network_mode: host
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./iptables/iptables.rules:/iptables.rules
+    command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
+    privileged: true
+ 
+  squid:
+    image: sameersbn/squid
+    container_name: zta_squid
+    volumes:
+      - ./squid/squid.conf:/etc/squid/squid.conf
+    ports:
+      - "3128:3128"
+ 
+  snort:
+    image: fike/snort
+    container_name: zta_snort
+    cap_add:
+      - NET_ADMIN
+    volumes:
+      - ./snort/snort.conf:/etc/snort/snort.conf
+    command: ["snort", "-c", "/etc/snort/snort.conf", "-A", "console"]
+    network_mode: "bridge"
+ 
+  splunk:
+    image: splunk/splunk:latest
+    container_name: zta_splunk
+    environment:
+      SPLUNK_START_ARGS: --accept-license
+      SPLUNK_PASSWORD: changeme
+    ports:
+      - "8000:8000"   # Web UI
+      - "8088:8088"   # HTTP Event Collector (HEC)
+    volumes:
+      - ./splunk:/opt/splunk/etc
