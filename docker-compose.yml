@@ -1,19 +1,19 @@
 version: '3.8'
- 
+
 services:
   db:
     image: postgres:15
     container_name: zta_postgres
     restart: always
     environment:
-      POSTGRES_USER: zta
-      POSTGRES_PASSWORD: zta_pw
-      POSTGRES_DB: zta_db
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./db/init_tables.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
- 
+
   pep:
     build: ./pep
     container_name: zta_pep
@@ -22,12 +22,12 @@ services:
     ports:
       - "8002:8002"
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=zta_db
-      - DB_USER=zta
-      - DB_PASSWORD=zta_pw
- 
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+
   pdp:
     build: ./pdp
     container_name: zta_pdp
@@ -37,14 +37,15 @@ services:
     ports:
       - "8001:8001"
     environment:
-      - DB_HOST=db
-      - DB_PORT=5432
-      - DB_NAME=zta_db
-      - DB_USER=zta
-      - DB_PASSWORD=zta_pw
-      - SPLUNK_HOST=splunk
-      - SPLUNK_PORT=8088
- 
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - SPLUNK_HOST=${SPLUNK_HOST}
+      - SPLUNK_PORT=${SPLUNK_PORT}
+      - SPLUNK_TOKEN=${SPLUNK_HEC_TOKEN}
+
   iptables:
     image: ubuntu
     container_name: zta_iptables
@@ -55,7 +56,7 @@ services:
       - ./iptables/iptables.rules:/iptables.rules
     command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
     privileged: true
- 
+
   squid:
     image: sameersbn/squid
     container_name: zta_squid
@@ -63,7 +64,7 @@ services:
       - ./squid/squid.conf:/etc/squid/squid.conf
     ports:
       - "3128:3128"
- 
+
   snort:
     image: fike/snort
     container_name: zta_snort
@@ -73,15 +74,15 @@ services:
       - ./snort/snort.conf:/etc/snort/snort.conf
     command: ["snort", "-c", "/etc/snort/snort.conf", "-A", "console"]
     network_mode: "bridge"
- 
+
   splunk:
     image: splunk/splunk:latest
     container_name: zta_splunk
     environment:
-      SPLUNK_START_ARGS: --accept-license
-      SPLUNK_PASSWORD: changeme
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
     ports:
-      - "8000:8000"   # Web UI
-      - "8088:8088"   # HTTP Event Collector (HEC)
+      - "8000:8000"
+      - "8088:8088"
     volumes:
       - ./splunk:/opt/splunk/etc
