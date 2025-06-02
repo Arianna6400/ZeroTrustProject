@@ -1,5 +1,5 @@
 version: '3.8'
- 
+
 services:
   db:
     image: postgres:15
@@ -9,11 +9,14 @@ services:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - ./db/init_tables.sql:/docker-entrypoint-initdb.d/init.sql
     ports:
       - "5432:5432"
- 
+
   pep:
     build: ./pep
     container_name: zta_pep
@@ -27,7 +30,7 @@ services:
       - DB_NAME=${DB_NAME}
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
- 
+
   pdp:
     build: ./pdp
     container_name: zta_pdp
@@ -44,7 +47,7 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - SPLUNK_HOST=${SPLUNK_HOST}
       - SPLUNK_PORT=${SPLUNK_PORT}
-      - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
+      - SPLUNK_TOKEN=${SPLUNK_HEC_TOKEN}
 
   iptables:
     image: ubuntu
@@ -56,7 +59,7 @@ services:
       - ./iptables/iptables.rules:/iptables.rules
     command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
     privileged: true
- 
+
   squid:
     image: sameersbn/squid
     container_name: zta_squid
@@ -64,7 +67,7 @@ services:
       - ./squid/squid.conf:/etc/squid/squid.conf
     ports:
       - "3128:3128"
- 
+
   snort:
     image: fike/snort
     container_name: zta_snort
@@ -74,15 +77,15 @@ services:
       - ./snort/snort.conf:/etc/snort/snort.conf
     command: ["snort", "-c", "/etc/snort/snort.conf", "-A", "console"]
     network_mode: "bridge"
- 
+
   splunk:
     image: splunk/splunk:latest
     container_name: zta_splunk
     environment:
-      SPLUNK_START_ARGS: --accept-license
-      SPLUNK_PASSWORD: ${SPLUNK_PASSWORD}
+      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
     ports:
-      - "8000:8000"   # Web UI
-      - "8088:8088"   # HTTP Event Collector (HEC)
+      - "8000:8000"
+      - "8088:8088"
     volumes:
       - ./splunk:/opt/splunk/etc
