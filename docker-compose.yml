@@ -64,6 +64,8 @@ services:
       - ./squid/squid.conf:/etc/squid/squid.conf
     ports:
       - "3128:3128"
+    networks:
+      - default
 
   snort:
     image: fike/snort
