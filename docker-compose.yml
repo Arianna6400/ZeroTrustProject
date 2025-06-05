@@ -63,7 +63,7 @@ services:
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf
     ports:
-      - "3128:3128"
+      - "3129:3128"
     networks:
       - default
 
@@ -73,7 +73,7 @@ services:
     cap_add:
       - NET_ADMIN
     volumes:
-      - ./snort/snort.conf:/etc/snort/snort.conf
+      - ./snort:/etc/snort
     command: ["snort", "-c", "/etc/snort/snort.conf", "-A", "console"]
     network_mode: bridge
 
