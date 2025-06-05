@@ -1,28 +1,54 @@
 from flask import Flask, request, jsonify
-import os
-import psycopg2 
 
 app = Flask(__name__)
 
-def get_db_connection():
-    return psycopg2.connect(
-        host=os.environ['DB_HOST'],
-        port=os.environ['DB_PORT'],
-        dbname=os.environ['DB_NAME'],
-        user=os.environ['DB_USER'],
-        password=os.environ['DB_PASSWORD']
-    )
+def valuta_fiducia(soggetto, rete, dispositivo):
+    punteggio = 0
 
-@app.route('/authorize', methods=['POST'])
-def authorize():
-    data = request.json
-    user_role = data.get('role')
-    action = data.get('action')
+    # Valutazione soggetto
+    if soggetto.startswith("admin"):
+        punteggio += 0.4
+    elif soggetto.startswith("personale"):
+        punteggio += 0.3
+    elif soggetto.startswith("guest"):
+        punteggio += 0.2
+    else:
+        punteggio += 0.1  # sconosciuto
 
-    # Semplice esempio di policy: solo i medici possono scrivere
-    if user_role == 'medico' or (user_role in ['paziente', 'familiare'] and action == 'read'):
-        return jsonify({'authorized': True}), 200
-    return jsonify({'authorized': False}), 403
+    # Valutazione rete
+    if rete == "Aziendale":
+        punteggio += 0.3
+    elif rete == "VPN":
+        punteggio += 0.2
+    elif rete == "Domestica":
+        punteggio += 0.1
+    else:
+        punteggio += 0
+
+    # Valutazione dispositivo
+    if dispositivo == "Aziendale":
+        punteggio += 0.3
+    elif dispositivo == "Privato":
+        punteggio += 0.1
+    else:
+        punteggio += 0
+
+    # Normalizza massimo a 1.0
+    return min(punteggio, 1.0)
+
+@app.route('/valuta', methods=['POST'])
+def valuta():
+    contesto = request.get_json()
+
+    soggetto = contesto.get("soggetto", "")
+    rete = contesto.get("rete", "")
+    dispositivo = contesto.get("dispositivo", "")
+    operazione = contesto.get("operazione", "")
+    risorsa = contesto.get("risorsa", "")
+
+    livello_fiducia = valuta_fiducia(soggetto, rete, dispositivo)
+
+    return jsonify({"fiducia": livello_fiducia})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8001)
+    app.run(host='0.0.0.0', port=5001)
