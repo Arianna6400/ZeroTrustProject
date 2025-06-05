@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY app.py . 
 
-RUN pip install flask requests
+RUN pip install flask requests psycopg2-binary
 
 CMD ["python", "app.py"]

@@ -1,3 +1,11 @@
+CREATE TABLE IF NOT EXISTS users (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password_hash TEXT NOT NULL,
+    user_role VARCHAR(100) CHECK(user_role IN ('Amministratore', 'Personale', 'Guest', 'Sconosciuto')) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 CREATE TABLE IF NOT EXISTS access_logs (
     id SERIAL PRIMARY KEY,
     access_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -8,15 +16,7 @@ CREATE TABLE IF NOT EXISTS access_logs (
     resource_acc VARCHAR(100) CHECK(resource_acc IN ('Sensibile', 'Non sensibile')) NOT NULL,
     source_ip VARCHAR(45),
     username_attempted VARCHAR(50),  -- se fornito, anche se non valido
-    outcome BOOLEAN DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS users (
-    id SERIAL PRIMARY KEY,
-    username VARCHAR(50) UNIQUE NOT NULL,
-    password_hash TEXT NOT NULL,
-    user_role VARCHAR(100) CHECK(user IN ('Amministratore', 'Personale', 'Guest', 'Sconosciuto')) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    outcome BOOLEAN DEFAULT False
 );
 
 CREATE TABLE tipi_risorse (
@@ -26,11 +26,16 @@ CREATE TABLE tipi_risorse (
     tipo_risorsa VARCHAR(50) CHECK(tipo_risorsa IN ('sensibile', 'non_sensibile'))  -- 'sensibile' o 'non_sensibile'
 );
 
-INSERT INTO tipi_risorse (nome, descrizione, tipo_risorsa)
-VALUES 
+INSERT INTO tipi_risorse (nome, descrizione, tipo_risorsa) VALUES 
     ('Cartella Clinica', 'Cartella contenente la storia clinica del paziente, diagnosi, trattamenti', 'sensibile'),
     ('Diagnosi Pazienti', 'Referti di laboratorio relativi ai pazienti', 'sensibile'),
+    ('Dati anagrafici pazienti', 'Informazioni personali dei pazienti', 'sensibile'),
+    ('Prescrizioni', 'Farmaci prescritti dal medico', 'sensibile'),
     ('Orario di apertura', 'Orario di apertura uffici amministrativi', 'non_sensibile'),
     ('Orario di visita', 'Orari di visita per i parenti dei pazienti', 'non_sensibile');
 
-
+INSERT INTO users (username, password_hash, user_role) VALUES
+    ('admin1', 'hash_admin', 'Amministratore'),
+    ('dottore', 'hash_doc', 'Personale'),
+    ('dottore1', '4f72b3b711bbcfa0cd28784fd10be33910e588aa06b722a1d2b65654e19fb001', 'Personale'),
+    ('guest1', 'hash_guest', 'Guest');

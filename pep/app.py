@@ -1,7 +1,24 @@
+import hashlib
 from flask import Flask, request, jsonify
 import requests
+import os
+import psycopg2
 
 app = Flask(__name__)
+
+# 🔐 Connessione al database
+conn = psycopg2.connect(
+    host=os.environ['DB_HOST'],
+    port=os.environ['DB_PORT'],
+    dbname=os.environ['DB_NAME'],
+    user=os.environ['DB_USER'],
+    password=os.environ['DB_PASSWORD']
+)
+cur = conn.cursor()
+
+# 🔑 Funzione per hash della password (esempio base)
+def hash_password(password):
+    return hashlib.sha256(password.encode()).hexdigest()
 
 # Funzione di esempio per determinare la soglia minima richiesta
 def get_threshold(operazione, risorsa):
@@ -24,18 +41,50 @@ def gestisci_operazione():
     rete = request.headers.get("X-Rete", "sconosciuta")
     dispositivo = request.headers.get("X-Dispositivo", "sconosciuto")
 
+    if not all([username, password, operazione, risorsa]):
+        return jsonify({"errore": "Dati incompleti"}), 400
+    
+    password_hash = hash_password(password)
+
+    # 🔍 Recupera ruolo dell'utente
+    cur.execute(
+        "SELECT user_role FROM users WHERE username = %s AND password_hash = %s",
+        (username, password_hash)
+    )
+    user_row = cur.fetchone()
+    if not user_row:
+        return jsonify({"errore": "Credenziali non valide",
+                        "username": username,
+                        "has_password": password_hash
+                        }), 401
+    
+    soggetto = user_row[0]
+
+    # 🔍 Recupera tipo della risorsa
+    cur.execute(
+        "SELECT tipo_risorsa FROM tipi_risorse WHERE nome = %s",
+        (risorsa,)
+    )
+    risorsa_row = cur.fetchone()
+    if not risorsa_row:
+        return jsonify({"errore": "Risorsa non trovata"}), 404
+
+    tipo_risorsa = risorsa_row[0]
+
+    #risorsa = 
+
     # 3. Costruisci il contesto per il PDP
     contesto = {
-        "soggetto": username,
+        "soggetto": soggetto,
         "rete": rete,
         "dispositivo": dispositivo,
         "operazione": operazione,
-        "risorsa": risorsa
+        "risorsa": tipo_risorsa
     }
 
     # 4. Chiedi valutazione al PDP
     try:
-        risposta = requests.post("http://0.0.0.0:5001/valuta", json=contesto)
+        risposta = requests.post("http://pdp:5001/valuta", json=contesto)
         risposta.raise_for_status()
         fiducia = risposta.json().get("fiducia", 0)
     except Exception as e:
@@ -45,9 +94,23 @@ def gestisci_operazione():
     soglia = get_threshold(operazione, risorsa)
     if fiducia >= soglia:
         # Esegui l'azione autorizzata sul DB (placeholder)
-        return jsonify({"accesso": "concesso", "livello_fiducia": fiducia}), 200
+        return jsonify({"accesso": "concesso", 
+                        "livello_fiducia": fiducia,
+                        "soggetto": soggetto,
+                        "rete": rete,
+                        "dispositivo": dispositivo,
+                        "operazione": operazione,
+                        "risorsa": tipo_risorsa
+                        }), 200
     else:
-        return jsonify({"accesso": "negato", "livello_fiducia": fiducia}), 403
+        return jsonify({"accesso": "negato", 
+                        "livello_fiducia": fiducia,
+                        "soggetto": soggetto,
+                        "rete": rete,
+                        "dispositivo": dispositivo,
+                        "operazione": operazione,
+                        "risorsa": tipo_risorsa
+                        }), 403
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000)
+    app.run(host='0.0.0.0', port=8002)
