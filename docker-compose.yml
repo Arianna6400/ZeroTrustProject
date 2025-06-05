@@ -1,4 +1,4 @@
-version: '3.8'
+version: "3.8"
 
 services:
   db:
@@ -49,12 +49,12 @@ services:
   iptables:
     build: ./iptables
     container_name: zta_iptables
-    network_mode: host  # Usa la rete del sistema host per permettere l'accesso a iptables
+    network_mode: host
     cap_add:
-      - NET_ADMIN  # Aggiungi capacità amministrative di rete per iptables
+      - NET_ADMIN
     volumes:
-      - ./iptables/iptables.rules:/iptables.rules  # Monta il file delle regole
-    privileged: true  # Abilita la modalità privilegiata per poter usare iptables
+      - ./iptables/iptables.rules:/iptables.rules
+    privileged: true
     command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
 
   squid:
@@ -66,14 +66,14 @@ services:
       - "3128:3128"
 
   snort:
-    image: fike/snort
+    image: patrickneise/snort
     container_name: zta_snort
     cap_add:
       - NET_ADMIN
     volumes:
       - ./snort/snort.conf:/etc/snort/snort.conf
     command: ["snort", "-c", "/etc/snort/snort.conf", "-A", "console"]
-    network_mode: "bridge"
+    network_mode: bridge
 
   splunk:
     image: splunk/splunk:latest
@@ -85,4 +85,7 @@ services:
       - "8000:8000"
       - "8088:8088"
     volumes:
-      - ./splunk:/opt/splunk/etc
+      - splunk_data:/opt/splunk  # Docker-managed volume, non scrive localmente
+
+volumes:
+  splunk_data:

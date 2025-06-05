@@ -1,5 +1,4 @@
-#Inizializzazione delle politiche di deafult
-
+# Inizializzazione delle politiche di default
 *filter
 :INPUT DROP [0:0]
 :FORWARD DROP [0:0]
@@ -8,14 +7,17 @@
 # Consenti traffico locale (localhost)
 -A INPUT -i lo -j ACCEPT
 
-# Consenti traffico SSH da IP specifici (ad esempio da IP aziendale)
+# Consenti traffico SSH da IP specifici (es. da IP aziendale)
 -A INPUT -p tcp -s 10.0.0.0/8 --dport 22 -j ACCEPT
 
-# Consenti trafffico al PEP (porta 8002) da IP aziendali
+# Consenti traffico al PEP (porta 8002) da IP aziendali
 -A INPUT -p tcp -s 10.0.0.0/8 --dport 8002 -j ACCEPT
 
 # Consenti traffico al PDP (porta 8001) solo da IP di PEP
 -A INPUT -p tcp -s 172.18.0.2 --dport 8001 -j ACCEPT
+
+# Consenti traffico al Squid (porta 3128) da IP aziendali
+-A INPUT -p tcp -s 10.0.0.0/8 --dport 3128 -j ACCEPT  # Porta Squid (proxy)
 
 # Bloccare traffico da IP sospetti (es. attacchi DoS)
 -A INPUT -p tcp --syn --dport 80 -m limit --limit 1/s --limit-burst 5 -j ACCEPT
