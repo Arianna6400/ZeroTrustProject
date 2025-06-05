@@ -47,15 +47,15 @@ services:
       - SPLUNK_TOKEN=${SPLUNK_HEC_TOKEN}
 
   iptables:
-    image: ubuntu
+    build: ./iptables
     container_name: zta_iptables
-    network_mode: host
+    network_mode: host  # Usa la rete del sistema host per permettere l'accesso a iptables
     cap_add:
-      - NET_ADMIN
+      - NET_ADMIN  # Aggiungi capacità amministrative di rete per iptables
     volumes:
-      - ./iptables/iptables.rules:/iptables.rules
+      - ./iptables/iptables.rules:/iptables.rules  # Monta il file delle regole
+    privileged: true  # Abilita la modalità privilegiata per poter usare iptables
     command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
-    privileged: true
 
   squid:
     image: sameersbn/squid
