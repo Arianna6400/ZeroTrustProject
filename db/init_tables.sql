@@ -18,3 +18,19 @@ CREATE TABLE IF NOT EXISTS users (
     user_role VARCHAR(100) CHECK(user IN ('Amministratore', 'Personale', 'Guest', 'Sconosciuto')) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE tipi_risorse (
+    id SERIAL PRIMARY KEY,
+    nome VARCHAR(255) UNIQUE NOT NULL,  -- Es: "Cartella Clinica", "Referto di laboratorio", ecc.
+    descrizione TEXT,
+    tipo_risorsa VARCHAR(50) CHECK(tipo_risorsa IN ('sensibile', 'non_sensibile'))  -- 'sensibile' o 'non_sensibile'
+);
+
+INSERT INTO tipi_risorse (nome, descrizione, tipo_risorsa)
+VALUES 
+    ('Cartella Clinica', 'Cartella contenente la storia clinica del paziente, diagnosi, trattamenti', 'sensibile'),
+    ('Diagnosi Pazienti', 'Referti di laboratorio relativi ai pazienti', 'sensibile'),
+    ('Orario di apertura', 'Orario di apertura uffici amministrativi', 'non_sensibile'),
+    ('Orario di visita', 'Orari di visita per i parenti dei pazienti', 'non_sensibile');
+
+
