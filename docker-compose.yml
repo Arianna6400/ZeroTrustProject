@@ -12,7 +12,7 @@ services:
     volumes:
       - ./db/init_tables.sql:/docker-entrypoint-initdb.d/init_tables.sql
     ports:
-      - "5432:5432"
+      - "5433:5432"
 
   pep:
     build: ./pep
@@ -68,14 +68,14 @@ services:
       - default
 
   snort:
-    image: patrickneise/snort
+    build: ./snort  
     container_name: zta_snort
+    network_mode: host 
     cap_add:
-      - NET_ADMIN
-    volumes:
-      - ./snort:/etc/snort
-    command: ["snort", "-c", "/etc/snort/snort.conf", "-A", "console"]
-    network_mode: bridge
+      - NET_ADMIN  # Permette al contenitore di configurare la rete
+    ports:
+      - "5140:5140/udp"  # Esporta la porta per gli avvisi
+    command: ["-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"]  # Usa snort.conf               
 
   splunk:
     image: splunk/splunk:latest
@@ -91,3 +91,7 @@ services:
 
 volumes:
   splunk_data:
+
+networks:
+  default:
+    driver: bridge
