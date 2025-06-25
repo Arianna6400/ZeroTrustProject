@@ -5,6 +5,11 @@ services:
     image: postgres:15
     container_name: zta_postgres
     restart: always
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "zta"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -18,8 +23,7 @@ services:
     build: ./pep
     container_name: zta_pep
     depends_on:
-      - pdp
-      - db
+      - pdp     
     ports:
       - "8002:8002"
     environment:
@@ -57,7 +61,8 @@ services:
     privileged: true
     command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
     depends_on:
-      - db  # iptables deve dipendere dal db, per garantirne l'avvio prima
+      db:  # iptables deve dipendere dal db, per garantirne l'avvio prima
+          condition: service_healthy
 
   squid:
     image: sameersbn/squid
@@ -101,5 +106,8 @@ volumes:
   splunk_data:
 
 networks:
-  default:
+  prova_network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.0.0/16
