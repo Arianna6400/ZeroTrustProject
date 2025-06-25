@@ -84,7 +84,7 @@ services:
       - NET_ADMIN  # Permette al contenitore di configurare la rete
     ports:
       - "5140:5140/udp"  # Esporta la porta per gli avvisi
-    command: ["-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"]  # Usa snort.conf  
+    command: ["snort", "-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"] 
     depends_on: 
       - iptables             
 

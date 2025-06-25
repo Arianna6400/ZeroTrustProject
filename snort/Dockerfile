@@ -1,10 +1,12 @@
-FROM patrickneise/snort
+FROM ubuntu:22.04
 
-# Copia il file di configurazione di Snort
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y snort
+
+# Configurazione
 COPY snort.conf /etc/snort/snort.conf
+COPY rules/local.rules /etc/snort/rules/local.rules
 
-# Modifica i permessi per permettere la lettura da parte di Snort
-RUN chmod 644 /etc/snort/snort.conf && chown snort:snort /etc/snort/snort.conf
-
-# Comando per avviare Snort
-CMD ["/usr/sbin/snort", "-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"]
+CMD ["snort","-A","console","-c","/etc/snort/snort.conf","-i","eth0"]
