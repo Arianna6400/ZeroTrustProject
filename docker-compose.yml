@@ -18,6 +18,7 @@ services:
     build: ./pep
     container_name: zta_pep
     depends_on:
+      - pdp
       - db
     ports:
       - "8002:8002"
@@ -32,7 +33,6 @@ services:
     build: ./pdp
     container_name: zta_pdp
     depends_on:
-      - db
       - splunk
     ports:
       - "8001:8001"
@@ -56,6 +56,8 @@ services:
       - ./iptables/iptables.rules:/iptables.rules
     privileged: true
     command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
+    depends_on:
+      - db  # iptables deve dipendere dal db, per garantirne l'avvio prima
 
   squid:
     image: sameersbn/squid
@@ -66,6 +68,8 @@ services:
       - "3129:3128"
     networks:
       - default
+    depends_on:
+      - snort
 
   snort:
     build: ./snort  
@@ -75,7 +79,9 @@ services:
       - NET_ADMIN  # Permette al contenitore di configurare la rete
     ports:
       - "5140:5140/udp"  # Esporta la porta per gli avvisi
-    command: ["-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"]  # Usa snort.conf               
+    command: ["-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"]  # Usa snort.conf  
+    depends_on: 
+      - iptables             
 
   splunk:
     image: splunk/splunk:latest
@@ -88,6 +94,8 @@ services:
       - "8088:8088"
     volumes:
       - splunk_data:/opt/splunk  # Docker-managed volume, non scrive localmente
+    depends_on:
+      - snort
 
 volumes:
   splunk_data:
