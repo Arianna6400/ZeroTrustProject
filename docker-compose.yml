@@ -53,7 +53,6 @@ services:
   iptables:
     build: ./iptables
     container_name: zta_iptables
-    network_mode: host
     cap_add:
       - NET_ADMIN
     volumes:
@@ -88,7 +87,6 @@ services:
   snort:
     build: ./snort  
     container_name: zta_snort
-    network_mode: host 
     cap_add:
       - NET_ADMIN  # Permette al contenitore di configurare la rete
     networks:

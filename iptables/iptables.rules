@@ -28,9 +28,9 @@
 # ---------------------------
 
 # PEP (porta 8002) accessibile da:
--A INPUT -p tcp -s 10.10.1.0/24 --dport 8002 -j ACCEPT  # Aziendale
--A INPUT -p tcp -s 10.10.2.0/24 --dport 8002 -j ACCEPT  # VPN
--A INPUT -p tcp -s 10.10.3.0/24 --dport 8002 -j ACCEPT  # Domestica
+-A INPUT -p tcp -s 10.10.1.0/24 --dport 8002 -j ACCEPT
+-A INPUT -p tcp -s 10.10.2.0/24 --dport 8002 -j ACCEPT
+-A INPUT -p tcp -s 10.10.3.0/24 --dport 8002 -j ACCEPT
 
 # PDP accessibile solo da PEP
 -A INPUT -p tcp -s 172.18.0.2 --dport 8001 -j ACCEPT
