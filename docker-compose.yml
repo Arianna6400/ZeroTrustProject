@@ -58,6 +58,11 @@ services:
       - NET_ADMIN
     volumes:
       - ./iptables/iptables.rules:/iptables.rules
+    networks:
+      - network_aziendale
+      - network_vpn
+      - network_domestica
+      - network_pubblica
     privileged: true
     command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
     depends_on:
@@ -69,12 +74,16 @@ services:
     container_name: zta_squid
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf
+      - ./squid/log:/var/log/squid
     ports:
       - "3129:3128"
     networks:
-      - default
+      - network_aziendale
+      - network_vpn
+      - network_domestica
+      - network_pubblica
     depends_on:
-      - snort
+      - iptables
 
   snort:
     build: ./snort  
@@ -82,11 +91,18 @@ services:
     network_mode: host 
     cap_add:
       - NET_ADMIN  # Permette al contenitore di configurare la rete
+    networks:
+      - network_aziendale
+      - network_vpn
+      - network_domestica
+      - network_pubblica
     ports:
       - "5140:5140/udp"  # Esporta la porta per gli avvisi
+    volumes:
+      - ./snort/log:/var/log/snort
     command: ["snort", "-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"] 
     depends_on: 
-      - iptables             
+      - squid            
 
   splunk:
     image: splunk/splunk:latest
@@ -106,8 +122,27 @@ volumes:
   splunk_data:
 
 networks:
-  prova_network:
+  network_aziendale:
     driver: bridge
     ipam:
       config:
-        - subnet: 10.10.0.0/16
+        - subnet: 10.10.1.0/24
+
+  network_vpn:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.2.0/24
+
+  network_domestica:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.3.0/24
+
+  network_pubblica:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.4.0/24
+

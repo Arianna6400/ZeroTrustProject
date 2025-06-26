@@ -1,32 +1,58 @@
-# Inizializzazione delle politiche di default
 *filter
 
+# Politiche di default
 :INPUT DROP [0:0]
 :FORWARD DROP [0:0]
 :OUTPUT ACCEPT [0:0]
 
-# Consenti traffico locale (localhost)
+# ---------------------------
+# Accesso base e sicurezza
+# ---------------------------
+
+# Traffico localhost
 -A INPUT -i lo -j ACCEPT
 
-# Consenti traffico SSH da IP specifici (es. da IP aziendale)
--A INPUT -p tcp -s 10.0.0.0/8 --dport 22 -j ACCEPT
+# Connessioni già stabilite
+-A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-# Consenti traffico al PEP (porta 8002) da IP aziendali
--A INPUT -p tcp -s 10.0.0.0/8 --dport 8002 -j ACCEPT
+# ---------------------------
+# Accesso SSH
+# ---------------------------
 
-# Consenti traffico al PDP (porta 8001) solo da IP di PEP
+# SSH da aziendale e VPN
+-A INPUT -p tcp -s 10.10.1.0/24 --dport 22 -j ACCEPT
+-A INPUT -p tcp -s 10.10.2.0/24 --dport 22 -j ACCEPT
+
+# ---------------------------
+# Accesso a servizi Zero Trust
+# ---------------------------
+
+# PEP (porta 8002) accessibile da:
+-A INPUT -p tcp -s 10.10.1.0/24 --dport 8002 -j ACCEPT  # Aziendale
+-A INPUT -p tcp -s 10.10.2.0/24 --dport 8002 -j ACCEPT  # VPN
+-A INPUT -p tcp -s 10.10.3.0/24 --dport 8002 -j ACCEPT  # Domestica
+
+# PDP accessibile solo da PEP
 -A INPUT -p tcp -s 172.18.0.2 --dport 8001 -j ACCEPT
 
-# Consenti traffico al Squid (porta 3128) da IP aziendali (porta Squid)
--A INPUT -p tcp -s 10.0.0.0/8 --dport 3128 -j ACCEPT 
+# Squid (3128) accessibile da reti fidate
+-A INPUT -p tcp -s 10.10.1.0/24 --dport 3128 -j ACCEPT
+-A INPUT -p tcp -s 10.10.2.0/24 --dport 3128 -j ACCEPT
+-A INPUT -p tcp -s 10.10.3.0/24 --dport 3128 -j ACCEPT
 
-# Bloccare traffico da IP sospetti (es. attacchi DoS)
+# ---------------------------
+# Protezione base da SYN flood
+# ---------------------------
 -A INPUT -p tcp --syn --dport 80 -m limit --limit 1/s --limit-burst 5 -j ACCEPT
 
-# Logging di pacchetti bloccati
+# ---------------------------
+# Logging e fallback
+# ---------------------------
+
+# Log dei pacchetti non gestiti
 -A INPUT -j LOG --log-prefix "Blocked Packet: " --log-level 4
 
-# Rifiuta tutto il resto
+# Rifiuto finale
 -A INPUT -j REJECT
 
 COMMIT

@@ -5,7 +5,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
     apt-get install -y snort
 
-# Configurazione
+# Prepara directory e file
+RUN mkdir -p /etc/snort/rules /var/log/snort
+
 COPY snort.conf /etc/snort/snort.conf
 COPY rules/local.rules /etc/snort/rules/local.rules
 
