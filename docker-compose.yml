@@ -115,12 +115,14 @@ services:
     ports:
       - "8000:8000"
       - "8088:8088"
+      - "9997:9997"
     volumes:
       - splunk_data:/opt/splunk  # Docker-managed volume, non scrive localmente
       - snort_logs:/mnt/snort_logs
       - iptables_logs:/mnt/iptables_logs
       - squid_logs:/mnt/squid_logs
       - postgres_logs:/mnt/postgres_logs
+      - pdp_logs:/mnt/pdp_logs
     depends_on:
       - snort
 
