@@ -2,3 +2,5 @@
 venv
 *.env
 *log
+*postgresql.conf
+*postgres
