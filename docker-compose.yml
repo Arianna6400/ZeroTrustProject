@@ -117,7 +117,8 @@ services:
     build: ./splunk
     container_name: zta_splunk
     environment:
-      - SPLUNK_START_ARGS=--accept-license
+      - SPLUNK_START_ARGS=--accept-license --no-prompt --answer-yes
+      - SPLUNK_IGNORE_SSL_ERRORS=true
       - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
     ports:
       - "8000:8000"
