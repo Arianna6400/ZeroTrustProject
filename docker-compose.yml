@@ -29,6 +29,11 @@ services:
       - pdp     
     ports:
       - "8002:8002"
+    networks:
+      - network_aziendale
+      - network_vpn
+      - network_domestica
+      - network_pubblica
     environment:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
