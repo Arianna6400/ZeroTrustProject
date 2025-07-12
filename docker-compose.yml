@@ -52,6 +52,8 @@ services:
       - SPLUNK_HOST=${SPLUNK_HOST}
       - SPLUNK_PORT=${SPLUNK_PORT}
       - SPLUNK_TOKEN=${SPLUNK_HEC_TOKEN}
+    volumes:
+      - pdp_logs:/mnt/pdp_logs
 
   iptables:
     build: ./iptables
@@ -132,6 +134,7 @@ volumes:
   iptables_logs:
   squid_logs:
   postgres_logs:
+  pdp_logs:
 
 networks:
   network_aziendale:
