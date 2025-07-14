@@ -10,6 +10,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - network_aziendale
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
