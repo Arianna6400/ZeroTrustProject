@@ -3,19 +3,26 @@ FROM ubuntu:20.04
 # Impostazioni per evitare interazioni durante l'installazione dei pacchetti
 ARG DEBIAN_FRONTEND=noninteractive
 
-# Aggiorna l'immagine e installa iptables
-RUN apt-get update && apt-get install -y iptables rsyslog
+# Aggiorna e installa iptables, rsyslog e procps (per sysctl)
+RUN apt-get update && apt-get install -y iptables rsyslog procps
 
-# Aggiungi il file di regole iptables all'interno del container
+# Copia le regole iptables e la configurazione rsyslog
 COPY iptables.rules /iptables.rules
 COPY rsyslog.conf /etc/rsyslog.conf
 
-# Aggiungi uno script di avvio che ripristina le regole di iptables all'avvio
-RUN echo "#!/bin/bash\n\
-service rsyslog start\n\
-iptables-restore < /iptables.rules\n\
-touch /var/log/iptables_logs/iptables.log\n\
-tail -f /var/log/iptables_logs/iptables.log" > /start.sh && chmod +x /start.sh
+# Abilita logging netfilter nei namespace
+RUN echo "net.netfilter.nf_log_all_netns=1" >> /etc/sysctl.conf
 
-# Impostiamo il comando di avvio come lo script di avvio
+# Crea cartella log, script di avvio, e rendilo eseguibile
+RUN mkdir -p /var/log/iptables_logs && \
+    echo '#!/bin/bash' > /start.sh && \
+    echo 'sysctl -w net.netfilter.nf_log_all_netns=1' >> /start.sh && \
+    echo 'modprobe nf_log_ipv4 || true' >> /start.sh && \
+    echo 'iptables-restore < /iptables.rules' >> /start.sh && \
+    echo 'rsyslogd' >> /start.sh && \
+    echo 'touch /var/log/iptables_logs/iptables.log' >> /start.sh && \
+    echo 'tail -f /var/log/iptables_logs/iptables.log' >> /start.sh && \
+    chmod +x /start.sh
+
+# Avvio container
 CMD ["/start.sh"]
