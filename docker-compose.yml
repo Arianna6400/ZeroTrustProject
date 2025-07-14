@@ -50,6 +50,8 @@ services:
       - splunk
     ports:
       - "8001:8001"
+    networks:
+      - network_aziendale
     environment:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -122,6 +124,8 @@ services:
       - SPLUNK_START_ARGS=--accept-license --no-prompt --answer-yes
       - SPLUNK_IGNORE_SSL_ERRORS=true
       - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
+    networks:
+      - network_aziendale
     ports:
       - "8000:8000"
       - "8088:8088"
