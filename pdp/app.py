@@ -3,10 +3,20 @@ import os
 import requests
 import logging
 import json
+from dotenv import load_dotenv
 
-SPLUNK_HOST = os.getenv("SPLUNK_HOST", "https://splunk:8089")
-SPLUNK_USER = os.getenv("SPLUNK_USERNAME", "admin")
-SPLUNK_PASS = os.getenv("SPLUNK_PASSWORD", "changeme")
+load_dotenv()
+
+def must_get_env(name):
+    value = os.getenv(name)
+    if value is None:
+        raise EnvironmentError(f"Variabile d'ambiente obbligatoria '{name}' mancante.")
+    return value
+
+SPLUNK_HOST = must_get_env("SPLUNK_HOST")
+SPLUNK_USERNAME = must_get_env("SPLUNK_USERNAME")
+SPLUNK_PASSWORD = must_get_env("SPLUNK_PASSWORD")
+PDP_PORT    = int(must_get_env("PDP_PORT"))
 
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -35,7 +45,7 @@ PENALTY_WRITE = 0.13
 
 def splunk_search(index, term, limit=10, earliest_time=None):
     
-    if not SPLUNK_USER or not SPLUNK_PASS:
+    if not SPLUNK_USERNAME or not SPLUNK_PASSWORD:
         logging.warning("Splunk credentials missing! Returning no results.")
         return []
     
@@ -45,7 +55,7 @@ def splunk_search(index, term, limit=10, earliest_time=None):
         job = request.post(
             f"{SPLUNK_HOST}/services/search/jobs",
             data={"search": query, "output_mode":"json"},
-            auth=(SPLUNK_USER, SPLUNK_PASS),
+            auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
             verify=False, timeout=15
         )
         job.raise_for_status()
@@ -57,7 +67,7 @@ def splunk_search(index, term, limit=10, earliest_time=None):
             r = request.get(
                 f"{SPLUNK_HOST}/services/search/jobs/{sid}",
                 params={"output_mode": "json"},
-                auth=(SPLUNK_USER, SPLUNK_PASS),
+                auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
                 verify=False, timeout=5
             )
             r.raise_for_status()
@@ -67,7 +77,7 @@ def splunk_search(index, term, limit=10, earliest_time=None):
         res = requests.get(
             f"{SPLUNK_HOST}/services/search/jobs/{sid}/results",
             params={"output_mode": "json"},
-            auth=(SPLUNK_USER, SPLUNK_PASS),
+            auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
             verify=False, timeout=10
         )
         res.raise_for_status()
@@ -112,4 +122,4 @@ def valuta():
     return jsonify({"fiducia": trust})
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8001, debug=False)
+    app.run(host='0.0.0.0', port=PDP_PORT, debug=False)

@@ -4,6 +4,6 @@ WORKDIR /app
 
 COPY app.py .
 
-RUN pip install flask psycopg2-binary
+RUN pip install flask requests python-dotenv
 
 CMD ["python", "app.py"]
