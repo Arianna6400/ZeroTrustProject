@@ -84,7 +84,7 @@ def gestisci_operazione():
 
     # 4. Chiedi valutazione al PDP
     try:
-        risposta = requests.post("http://pdp:5001/valuta", json=contesto)
+        risposta = requests.post("http://pdp:8001/valuta", json=contesto)
         risposta.raise_for_status()
         fiducia = risposta.json().get("fiducia", 0)
     except Exception as e:
