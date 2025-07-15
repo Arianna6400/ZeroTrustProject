@@ -1,10 +1,17 @@
+
 import hashlib
 from flask import Flask, request, jsonify
 import requests
 import os
 import psycopg2
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = Flask(__name__)
+
+PEP_PORT = int(os.getenv('PEP_PORT'))
+PDP_VALUTA = os.getenv('PDP_VALUTA')
 
 # 🔐 Connessione al database
 conn = psycopg2.connect(
@@ -84,7 +91,7 @@ def gestisci_operazione():
 
     # 4. Chiedi valutazione al PDP
     try:
-        risposta = requests.post("http://pdp:8001/valuta", json=contesto)
+        risposta = requests.post(PDP_VALUTA, json=contesto)
         risposta.raise_for_status()
         fiducia = risposta.json().get("fiducia", 0)
     except Exception as e:
@@ -113,4 +120,4 @@ def gestisci_operazione():
                         }), 403
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8002)
+    app.run(host='0.0.0.0', port=PEP_PORT)
