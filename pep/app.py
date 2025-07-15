@@ -25,7 +25,7 @@ def get_threshold(operazione, risorsa):
     if risorsa == "sensibile":
         return 0.8 if operazione == "scrittura" else 0.6
     else:
-        return 0.5 if operazione == "scrittura" else 0.3
+        return 0.5 if operazione == "scrittura" else 0.1
 
 @app.route('/operazione', methods=['POST'])
 def gestisci_operazione():

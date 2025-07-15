@@ -3,6 +3,8 @@ import requests
 import os
 import getpass
 
+# docker exec -it client_interattivo python3 /app/send_operation.py   --operazione lettura   --risorsa "Orario di visita"
+
 # Argomenti da riga di comando
 parser = argparse.ArgumentParser(description="Client dinamico per PEP")
 parser.add_argument("--username", help="Nome utente (interattivo se assente)")

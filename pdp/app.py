@@ -19,8 +19,28 @@ SPLUNK_PASSWORD = must_get_env("SPLUNK_PASSWORD")
 PDP_PORT    = int(must_get_env("PDP_PORT"))
 
 app = Flask(__name__)
-logging.basicConfig(level=logging.INFO)
 
+# === CONFIGURAZIONE LOGGING SU FILE ===
+LOG_DIR = "/mnt/pdp_logs"
+LOG_FILE = os.path.join(LOG_DIR, "pdp.log")
+os.makedirs(LOG_DIR, exist_ok=True)
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+# File handler
+file_handler = logging.FileHandler(LOG_FILE)
+file_handler.setLevel(logging.INFO)
+file_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s - %(message)s'))
+
+# Console handler
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+
+# Evita duplicati
+if not logger.handlers:
+    logger.addHandler(file_handler)
+    logger.addHandler(console_handler)
 BASE_TRUST = {
     "amministratore": 0.6,
     "personale": 0.4,
@@ -122,4 +142,5 @@ def valuta():
     return jsonify({"fiducia": trust})
 
 if __name__ == '__main__':
+    logging.info("PDP avviato: il servizio è in ascolto sulla porta 8001")
     app.run(host='0.0.0.0', port=PDP_PORT, debug=False)
