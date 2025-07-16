@@ -127,9 +127,10 @@ services:
     networks:
       - network_aziendale
     ports:
-      - "8000:8000"
-      - "8088:8088"
-      - "9997:9997"
+      - "8000:8000" # Web UI (accessibile via browser)
+      - "8088:8088" # HTTP Event Collector (HEC)
+      - "8089:8089" # REST API di Splunk Management
+      - "9997:9997" # Universal Forwarder
     volumes:
       - splunk_data:/opt/splunk  # Docker-managed volume, non scrive localmente
       - snort_logs:/mnt/snort_logs

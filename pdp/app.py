@@ -1,6 +1,6 @@
 from flask import Flask, request, jsonify
 import os
-import requests
+import requests as req
 import logging
 import json
 from dotenv import load_dotenv
@@ -72,7 +72,7 @@ def splunk_search(index, term, limit=10, earliest_time=None):
     time_filter = f' earliest="{earliest_time}" latest="now"' if earliest_time else ""
     query = f'search index={index} {term}{time_filter} | head {limit}'
     try:
-        job = request.post(
+        job = req.post(
             f"{SPLUNK_HOST}/services/search/jobs",
             data={"search": query, "output_mode":"json"},
             auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
@@ -84,7 +84,7 @@ def splunk_search(index, term, limit=10, earliest_time=None):
             return []
         
         for _ in range(15):
-            r = request.get(
+            r = req.get(
                 f"{SPLUNK_HOST}/services/search/jobs/{sid}",
                 params={"output_mode": "json"},
                 auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
@@ -94,7 +94,7 @@ def splunk_search(index, term, limit=10, earliest_time=None):
             if r.json()["entry"][0]["content"]["isDone"]:
                 break
         
-        res = requests.get(
+        res = req.get(
             f"{SPLUNK_HOST}/services/search/jobs/{sid}/results",
             params={"output_mode": "json"},
             auth=(SPLUNK_USERNAME, SPLUNK_PASSWORD),
@@ -142,5 +142,5 @@ def valuta():
     return jsonify({"fiducia": trust})
 
 if __name__ == '__main__':
-    logging.info("PDP avviato: il servizio è in ascolto sulla porta 8001")
+    logging.info(f"PDP avviato: il servizio è in ascolto sulla porta {PDP_PORT}")
     app.run(host='0.0.0.0', port=PDP_PORT, debug=False)

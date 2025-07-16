@@ -4,6 +4,7 @@ from flask import Flask, request, jsonify
 import requests
 import os
 import psycopg2
+import logging
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -120,4 +121,5 @@ def gestisci_operazione():
                         }), 403
 
 if __name__ == '__main__':
+    logging.info(f"PEP avviato: il servizio è in ascolto sulla porta {PEP_PORT}")
     app.run(host='0.0.0.0', port=PEP_PORT)
