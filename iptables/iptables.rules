@@ -45,14 +45,7 @@
 # ---------------------------
 -A INPUT -p tcp --syn --dport 80 -m limit --limit 1/s --limit-burst 5 -j ACCEPT
 
-# ---------------------------
-# Logging e fallback
-# ---------------------------
-
-# Log dei pacchetti non gestiti
--A INPUT -j LOG --log-prefix "Blocked Packet: " --log-level 4
-
 # Rifiuto finale
--A INPUT -j REJECT
+-A INPUT -j DROP
 
 COMMIT

@@ -71,14 +71,13 @@ services:
       - NET_ADMIN
     volumes:
       - ./iptables/iptables.rules:/iptables.rules
-      - iptables_logs:/var/log/iptables_logs
     networks:
       - network_aziendale
       - network_vpn
       - network_domestica
       - network_pubblica
     privileged: true
-    command: ["sh", "-c", "iptables-restore < /iptables.rules && tail -f /dev/null"]
+    command: ["/start.sh"]
     depends_on:
       db:  # iptables deve dipendere dal db, per garantirne l'avvio prima
           condition: service_healthy
@@ -113,7 +112,7 @@ services:
       - "5140:5140/udp"  # Esporta la porta per gli avvisi
     volumes:
       - snort_logs:/var/log/snort
-    command: ["snort", "-A", "console", "-c", "/etc/snort/snort.conf", "-i", "eth0"] 
+    command: ["snort", "-c", "/etc/snort/snort.conf", "-i", "eth0"] 
     depends_on: 
       - squid            
 
@@ -134,7 +133,6 @@ services:
     volumes:
       - splunk_data:/opt/splunk  # Docker-managed volume, non scrive localmente
       - snort_logs:/mnt/snort_logs
-      - iptables_logs:/mnt/iptables_logs
       - squid_logs:/mnt/squid_logs
       - postgres_logs:/mnt/postgres_logs
       - pdp_logs:/mnt/pdp_logs
@@ -191,11 +189,15 @@ services:
 
 volumes:
   splunk_data:
+    driver: local
   snort_logs:
-  iptables_logs:
+    driver: local
   squid_logs:
+    driver: local
   postgres_logs:
+    driver: local
   pdp_logs:
+    driver: local
 
 networks:
   network_aziendale:

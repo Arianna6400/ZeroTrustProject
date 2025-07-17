@@ -13,6 +13,29 @@ def must_get_env(name):
         raise EnvironmentError(f"Variabile d'ambiente obbligatoria '{name}' mancante.")
     return value
 
+def setup_logger():
+    log_dir = must_get_env("LOG_DIR")
+    log_file = must_get_env("LOG_FILE")
+    full_path = os.path.join(log_dir, log_file)
+
+    os.makedirs(log_dir, exist_ok=True)
+
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    # Evita di aggiungere handler multipli se già presenti
+    if not logger.hasHandlers():
+        # File handler
+        fh = logging.FileHandler(full_path)
+        fh.setLevel(logging.INFO)
+        fh.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s - %(message)s'))
+        logger.addHandler(fh)
+
+        # Console handler
+        ch = logging.StreamHandler()
+        ch.setLevel(logging.INFO)
+        logger.addHandler(ch)
+
 SPLUNK_HOST = must_get_env("SPLUNK_HOST")
 SPLUNK_USERNAME = must_get_env("SPLUNK_USERNAME")
 SPLUNK_PASSWORD = must_get_env("SPLUNK_PASSWORD")
@@ -20,27 +43,8 @@ PDP_PORT    = int(must_get_env("PDP_PORT"))
 
 app = Flask(__name__)
 
-# === CONFIGURAZIONE LOGGING SU FILE ===
-LOG_DIR = "/mnt/pdp_logs"
-LOG_FILE = os.path.join(LOG_DIR, "pdp.log")
-os.makedirs(LOG_DIR, exist_ok=True)
+setup_logger()
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-# File handler
-file_handler = logging.FileHandler(LOG_FILE)
-file_handler.setLevel(logging.INFO)
-file_handler.setFormatter(logging.Formatter('[%(asctime)s] %(levelname)s - %(message)s'))
-
-# Console handler
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-
-# Evita duplicati
-if not logger.handlers:
-    logger.addHandler(file_handler)
-    logger.addHandler(console_handler)
 BASE_TRUST = {
     "amministratore": 0.6,
     "personale": 0.4,
