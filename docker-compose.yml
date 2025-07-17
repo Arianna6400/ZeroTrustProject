@@ -61,6 +61,8 @@ services:
       - SPLUNK_USERNAME=${SPLUNK_USERNAME}
       - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
       - PDP_PORT=${PDP_PORT}
+      - LOG_DIR=${LOG_DIR}
+      - LOG_FILE=${LOG_FILE}
     volumes:
       - pdp_logs:/mnt/pdp_logs
 

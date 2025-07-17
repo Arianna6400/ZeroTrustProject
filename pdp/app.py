@@ -14,11 +14,11 @@ def must_get_env(name):
     return value
 
 def setup_logger():
-    log_dir = must_get_env("LOG_DIR")
-    log_file = must_get_env("LOG_FILE")
-    full_path = os.path.join(log_dir, log_file)
+    LOG_DIR = must_get_env("LOG_DIR")
+    LOG_FILE = must_get_env("LOG_FILE")
+    full_path = os.path.join(LOG_DIR, LOG_FILE)
 
-    os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(LOG_DIR, exist_ok=True)
 
     logger = logging.getLogger()
     logger.setLevel(logging.INFO)
