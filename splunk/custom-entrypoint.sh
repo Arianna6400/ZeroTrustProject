@@ -9,5 +9,7 @@ if [ -d "/mnt/postgres_logs" ]; then
     echo "[INFO] Setted permissions on /mnt/postgres_logs"
 fi
 
+chown -R splunk:splunk /opt/splunk
+
 # ✅ Avvia Splunk normalmente
 exec /sbin/entrypoint.sh start
