@@ -26,9 +26,10 @@ services:
 
   pep:
     build: ./pep
-    container_name: zta_pep
+    container_name: zta_pep   
     depends_on:
-      - pdp     
+      db:
+        condition: service_healthy 
     ports:
       - "8002:8002"
     networks:
@@ -99,6 +100,7 @@ services:
       - network_pubblica
     depends_on:
       - iptables
+      - pep
 
   snort:
     build: ./snort  
