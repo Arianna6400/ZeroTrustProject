@@ -23,7 +23,12 @@ if [ -d "/mnt/squid_logs" ]; then
     echo "[INFO] Setted permissions on /mnt/squid_logs"
 fi
 
-# chown -R splunk:splunk /opt/splunk
+if [ ! -d "/opt/splunk/var/log/splunk" ]; then
+    echo "[INFO] Creating /opt/splunk/var/log/splunk directory"
+    mkdir -p /opt/splunk/var/log/splunk
+fi
+chmod -R a+rX /opt/splunk/var/log/splunk
+chown -R splunk:splunk /opt/splunk
 
 # ✅ Avvia Splunk normalmente
 exec /sbin/entrypoint.sh start
