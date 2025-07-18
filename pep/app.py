@@ -1,4 +1,3 @@
-
 import hashlib
 from flask import Flask, request, jsonify
 import requests
@@ -24,51 +23,95 @@ conn = psycopg2.connect(
 )
 cur = conn.cursor()
 
-# 🔑 Funzione per hash della password (esempio base)
+# 🔑 Funzione per hash della password
+
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# Funzione di esempio per determinare la soglia minima richiesta
-def get_threshold(operazione, risorsa):
-    if risorsa == "sensibile":
-        return 0.8 if operazione == "scrittura" else 0.6
-    else:
-        return 0.5 if operazione == "scrittura" else 0.1
+# Politiche scritte direttamente nel codice
+POLICIES = [
+    {
+        "nome": "Accesso dati sanitari Medico",
+        "descrizione": "Solo Medico o Amministratore possono accedere a dati sanitari",
+        "risorsa": "sensibile",
+        "operazione": "scrittura",
+        "ruoli_ammessi": ["Amministratore", "Personale"],
+        "rete_richiesta": None,
+        "soglia": 0.7
+    },
+    {
+        "nome": "Accesso tramite dispositivi personali autorizzati",
+        "descrizione": "Accesso ai dati sanitari consentito anche da dispositivi personali",
+        "risorsa": "sensibile",
+        "operazione": "scrittura",
+        "ruoli_ammessi": ["Personale", "Amministratore"],
+        "rete_richiesta": None,
+        "soglia": 0.5
+    },
+    {
+        "nome": "Accesso in caso di emergenza",
+        "descrizione": "Accesso urgente in caso di emergenza sanitaria fuori orario",
+        "risorsa": "urgente",
+        "operazione": "lettura",
+        "ruoli_ammessi": ["Personale", "Amministratore"],
+        "rete_richiesta": None,
+        "soglia": 0.65
+    },
+    {
+        "nome": "Accesso dati sanitari Personale sanitario",
+        "descrizione": "Solo personale sanitario in rete aziendale può accedere a dati sensibili",
+        "risorsa": "sensibile",
+        "operazione": "scrittura",
+        "ruoli_ammessi": ["Personale"],
+        "rete_richiesta": "aziendale",
+        "soglia": 0.6
+    },
+    {
+        "nome": "Dispositivi compromessi o non protetti",
+        "descrizione": "Accesso negato da dispositivi compromessi",
+        "risorsa": "informativi",
+        "operazione": "restrizioni",
+        "ruoli_ammessi": ["Personale", "Amministratore", "Guest"],
+        "rete_richiesta": None,
+        "soglia": 0.6
+    }
+]
+
+# Trova policy che si applica al contesto
+
+def trova_policy(tipo_risorsa, operazione):
+    for policy in POLICIES:
+        if policy['risorsa'] == tipo_risorsa and policy['operazione'].lower() == operazione.lower():
+            return policy
+    return None
 
 @app.route('/operazione', methods=['POST'])
 def gestisci_operazione():
     dati = request.get_json()
 
-    # 1. Estrai dati dal body
     username = dati.get("username")
-    password = dati.get("password")  # eventualmente usato per autenticazione futura
+    password = dati.get("password")
     operazione = dati.get("operazione")
     risorsa = dati.get("risorsa")
 
-    # 2. Estrai header impostati da Squid
-    rete = request.headers.get("X-Rete", "sconosciuta")
+    rete = request.headers.get("X-Rete", "sconosciuta").lower()
     dispositivo = request.headers.get("X-Dispositivo", "sconosciuto")
 
     if not all([username, password, operazione, risorsa]):
         return jsonify({"errore": "Dati incompleti"}), 400
-    
+
     password_hash = hash_password(password)
 
-    # 🔍 Recupera ruolo dell'utente
     cur.execute(
         "SELECT user_role FROM users WHERE username = %s AND password_hash = %s",
         (username, password_hash)
     )
     user_row = cur.fetchone()
     if not user_row:
-        return jsonify({"errore": "Credenziali non valide",
-                        "username": username,
-                        "has_password": password_hash
-                        }), 401
-    
+        return jsonify({"errore": "Credenziali non valide"}), 401
+
     soggetto = user_row[0]
 
-    # 🔍 Recupera tipo della risorsa
     cur.execute(
         "SELECT tipo_risorsa FROM tipi_risorse WHERE nome = %s",
         (risorsa,)
@@ -79,9 +122,6 @@ def gestisci_operazione():
 
     tipo_risorsa = risorsa_row[0]
 
-    #risorsa = 
-
-    # 3. Costruisci il contesto per il PDP
     contesto = {
         "soggetto": soggetto,
         "rete": rete,
@@ -90,7 +130,20 @@ def gestisci_operazione():
         "risorsa": tipo_risorsa
     }
 
-    # 4. Chiedi valutazione al PDP
+    policy = trova_policy(tipo_risorsa, operazione)
+
+    if policy:
+        if soggetto not in policy['ruoli_ammessi']:
+            return jsonify({"accesso": "negato", "motivo": "Ruolo non autorizzato per questa operazione"}), 403
+        if policy['rete_richiesta'] and rete != policy['rete_richiesta']:
+            return jsonify({"accesso": "negato", "motivo": "Rete non autorizzata per questa operazione"}), 403
+        soglia = policy['soglia']
+    else:
+        if tipo_risorsa == "sensibile":
+            soglia = 0.8 if operazione.lower() == "scrittura" else 0.6
+        else:
+            soglia = 0.5 if operazione.lower() == "scrittura" else 0.1
+
     try:
         risposta = requests.post(PDP_VALUTA, json=contesto)
         risposta.raise_for_status()
@@ -98,27 +151,24 @@ def gestisci_operazione():
     except Exception as e:
         return jsonify({"errore": f"Errore nella valutazione PDP: {str(e)}"}), 500
 
-    # 5. Valuta contro soglia
-    soglia = get_threshold(operazione, risorsa)
-    if fiducia >= soglia:
-        # Esegui l'azione autorizzata sul DB (placeholder)
-        return jsonify({"accesso": "concesso", 
-                        "livello_fiducia": fiducia,
-                        "soggetto": soggetto,
-                        "rete": rete,
-                        "dispositivo": dispositivo,
-                        "operazione": operazione,
-                        "risorsa": tipo_risorsa
-                        }), 200
-    else:
-        return jsonify({"accesso": "negato", 
-                        "livello_fiducia": fiducia,
-                        "soggetto": soggetto,
-                        "rete": rete,
-                        "dispositivo": dispositivo,
-                        "operazione": operazione,
-                        "risorsa": tipo_risorsa
-                        }), 403
+    risultato = {
+    "accesso": "concesso" if fiducia >= soglia else "negato",
+    "soggetto": soggetto,
+    "operazione": operazione,
+    "risorsa": tipo_risorsa,
+    "rete": rete,
+    "dispositivo": dispositivo,
+    
+    "dettagli_policy": {
+        "policy_applicata": policy['nome'] if policy else "Default dinamica",
+        "soglia": round(soglia, 2),
+        "livello_fiducia": round(fiducia, 2)
+        }
+    }
+
+
+    return jsonify(risultato), 200 if fiducia >= soglia else 403
+
 
 if __name__ == '__main__':
     logging.info(f"PEP avviato: il servizio è in ascolto sulla porta {PEP_PORT}")
