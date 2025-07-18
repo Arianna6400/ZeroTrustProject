@@ -4,6 +4,7 @@ import requests
 import os
 import psycopg2
 import logging
+import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -12,6 +13,7 @@ app = Flask(__name__)
 
 PEP_PORT = int(os.getenv('PEP_PORT'))
 PDP_VALUTA = os.getenv('PDP_VALUTA')
+POLICY_FILE = os.getenv('POLICY_FILE', 'policies.json')
 
 # 🔐 Connessione al database
 conn = psycopg2.connect(
@@ -28,57 +30,18 @@ cur = conn.cursor()
 def hash_password(password):
     return hashlib.sha256(password.encode()).hexdigest()
 
-# Politiche scritte direttamente nel codice
-POLICIES = [
-    {
-        "nome": "Accesso dati sanitari Medico",
-        "descrizione": "Solo Medico o Amministratore possono accedere a dati sanitari",
-        "risorsa": "sensibile",
-        "operazione": "scrittura",
-        "ruoli_ammessi": ["Amministratore", "Personale"],
-        "rete_richiesta": None,
-        "soglia": 0.7
-    },
-    {
-        "nome": "Accesso tramite dispositivi personali autorizzati",
-        "descrizione": "Accesso ai dati sanitari consentito anche da dispositivi personali",
-        "risorsa": "sensibile",
-        "operazione": "scrittura",
-        "ruoli_ammessi": ["Personale", "Amministratore"],
-        "rete_richiesta": None,
-        "soglia": 0.5
-    },
-    {
-        "nome": "Accesso in caso di emergenza",
-        "descrizione": "Accesso urgente in caso di emergenza sanitaria fuori orario",
-        "risorsa": "urgente",
-        "operazione": "lettura",
-        "ruoli_ammessi": ["Personale", "Amministratore"],
-        "rete_richiesta": None,
-        "soglia": 0.65
-    },
-    {
-        "nome": "Accesso dati sanitari Personale sanitario",
-        "descrizione": "Solo personale sanitario in rete aziendale può accedere a dati sensibili",
-        "risorsa": "sensibile",
-        "operazione": "scrittura",
-        "ruoli_ammessi": ["Personale"],
-        "rete_richiesta": "aziendale",
-        "soglia": 0.6
-    },
-    {
-        "nome": "Dispositivi compromessi o non protetti",
-        "descrizione": "Accesso negato da dispositivi compromessi",
-        "risorsa": "informativi",
-        "operazione": "restrizioni",
-        "ruoli_ammessi": ["Personale", "Amministratore", "Guest"],
-        "rete_richiesta": None,
-        "soglia": 0.6
-    }
-]
+# 📄 Carica policy da file JSON
+def carica_policy_da_file(percorso):
+    try:
+        with open(percorso, 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        logging.error(f"Errore nel caricamento delle policy: {e}")
+        return []
+
+POLICIES = carica_policy_da_file(POLICY_FILE)
 
 # Trova policy che si applica al contesto
-
 def trova_policy(tipo_risorsa, operazione):
     for policy in POLICIES:
         if policy['risorsa'] == tipo_risorsa and policy['operazione'].lower() == operazione.lower():
@@ -94,8 +57,11 @@ def gestisci_operazione():
     operazione = dati.get("operazione")
     risorsa = dati.get("risorsa")
 
-    rete = request.headers.get("X-Rete", "sconosciuta").lower()
-    dispositivo = request.headers.get("X-Dispositivo", "sconosciuto")
+    rete_header = request.headers.get("X-Rete", "sconosciuta").lower()
+    rete = rete_header.split(',')[0].strip()
+
+    dispositivo_header = request.headers.get("X-Dispositivo", "sconosciuto")
+    dispositivo = dispositivo_header.split(',')[0].strip()
 
     if not all([username, password, operazione, risorsa]):
         return jsonify({"errore": "Dati incompleti"}), 400
@@ -147,8 +113,11 @@ def gestisci_operazione():
     try:
         risposta = requests.post(PDP_VALUTA, json=contesto)
         risposta.raise_for_status()
-        fiducia = risposta.json().get("fiducia", 0)
-    except Exception as e:
+        try:
+            fiducia = risposta.json().get("fiducia", 0)
+        except Exception as json_err:
+            return jsonify({"errore": f"PDP ha risposto ma non in formato JSON: {str(json_err)}"}), 500
+    except requests.exceptions.RequestException as e:
         return jsonify({"errore": f"Errore nella valutazione PDP: {str(e)}"}), 500
 
     risultato = {

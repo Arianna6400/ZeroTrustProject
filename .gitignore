@@ -4,3 +4,4 @@ venv
 *log
 *postgresql.conf
 *postgres
+/policies.json

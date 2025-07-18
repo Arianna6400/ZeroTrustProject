@@ -23,6 +23,9 @@
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 22 -j ACCEPT
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 22 -j ACCEPT
 
+# Blocco SSH da rete pubblica
+-A INPUT -p tcp -s 10.10.4.0/24 --dport 22 -j DROP
+
 # ---------------------------
 # Accesso a servizi Zero Trust
 # ---------------------------
@@ -32,8 +35,14 @@
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 8002 -j ACCEPT
 -A INPUT -p tcp -s 10.10.3.0/24 --dport 8002 -j ACCEPT
 
-# PDP accessibile solo da PEP
--A INPUT -p tcp -s 172.18.0.2 --dport 8001 -j ACCEPT
+# Blocco accesso a PEP da rete pubblica
+-A INPUT -p tcp -s 10.10.4.0/24 --dport 8002 -j DROP
+
+# PDP accessibile solo da rete aziendale (in cui si trova il PEP)
+-A INPUT -p tcp -s 10.10.1.0/24 --dport 8001 -j ACCEPT
+
+# Blocco PDP da altri indirizzi
+-A INPUT -p tcp --dport 8001 -j DROP
 
 # Squid (3128) accessibile da reti fidate
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 3128 -j ACCEPT

@@ -1,0 +1,4 @@
+{
+  "pep_url": "http://zta_pep:8002/operazione",
+  "proxy_url": "http://zta_squid:3128"
+}

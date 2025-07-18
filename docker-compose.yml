@@ -64,8 +64,10 @@ services:
       - PDP_PORT=${PDP_PORT}
       - LOG_DIR=${LOG_DIR}
       - LOG_FILE=${LOG_FILE}
+      - POLICY_FILE=${POLICY_FILE}
     volumes:
       - pdp_logs:/mnt/pdp_logs
+      - ./policies.json:/app/policies.json
 
   iptables:
     build: ./iptables
@@ -80,7 +82,6 @@ services:
       - network_domestica
       - network_pubblica
     privileged: true
-    command: ["/start.sh"]
     depends_on:
       db:  # iptables deve dipendere dal db, per garantirne l'avvio prima
           condition: service_healthy
@@ -112,11 +113,12 @@ services:
       - network_vpn
       - network_domestica
       - network_pubblica
+    privileged: true
     ports:
       - "5140:5140/udp"  # Esporta la porta per gli avvisi
     volumes:
+      - ./snort/rules:/etc/snort/rules
       - snort_logs:/var/log/snort
-    command: ["snort", "-c", "/etc/snort/snort.conf", "-i", "eth0"] 
     depends_on: 
       - squid            
 

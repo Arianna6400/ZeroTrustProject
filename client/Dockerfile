@@ -3,6 +3,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 COPY send_operation.py .
+COPY config.json .
 
 # Installa i tool di rete necessari
 RUN apt-get update && \

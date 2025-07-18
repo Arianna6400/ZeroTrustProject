@@ -1,0 +1,47 @@
+[
+    {
+        "nome": "Accesso dati sanitari Medico",
+        "descrizione": "Solo Medico o Amministratore possono accedere a dati sanitari",
+        "risorsa": "sensibile",
+        "operazione": "scrittura",
+        "ruoli_ammessi": ["Amministratore", "Personale"],
+        "rete_richiesta": null,
+        "soglia": 0.7
+    },
+    {
+        "nome": "Accesso tramite dispositivi personali autorizzati",
+        "descrizione": "Accesso ai dati sanitari consentito anche da dispositivi personali",
+        "risorsa": "sensibile",
+        "operazione": "scrittura",
+        "ruoli_ammessi": ["Personale", "Amministratore"],
+        "rete_richiesta": null,
+        "soglia": 0.5
+    },
+    {
+        "nome": "Accesso in caso di emergenza",
+        "descrizione": "Accesso urgente in caso di emergenza sanitaria fuori orario",
+        "risorsa": "urgente",
+        "operazione": "lettura",
+        "ruoli_ammessi": ["Personale", "Amministratore"],
+        "rete_richiesta": null,
+        "soglia": 0.65
+    },
+    {
+        "nome": "Accesso dati sanitari Personale sanitario",
+        "descrizione": "Solo personale sanitario in rete aziendale può accedere a dati sensibili",
+        "risorsa": "sensibile",
+        "operazione": "scrittura",
+        "ruoli_ammessi": ["Personale"],
+        "rete_richiesta": "aziendale",
+        "soglia": 0.6
+    },
+    {
+        "nome": "Dispositivi compromessi o non protetti",
+        "descrizione": "Accesso negato da dispositivi compromessi",
+        "risorsa": "informativi",
+        "operazione": "restrizioni",
+        "ruoli_ammessi": ["Personale", "Amministratore", "Guest"],
+        "rete_richiesta": null,
+        "soglia": 0.6
+    }
+]

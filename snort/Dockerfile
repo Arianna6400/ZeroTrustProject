@@ -3,12 +3,16 @@ FROM ubuntu:22.04
 ENV DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && \
-    apt-get install -y snort
+    apt-get install -y snort tcpdump
 
 # Prepara directory e file
 RUN mkdir -p /etc/snort/rules /var/log/snort
 
 COPY snort.conf /etc/snort/snort.conf
 COPY rules/local.rules /etc/snort/rules/local.rules
+COPY snort_start.sh /snort_start.sh
 
-CMD ["snort","-A","console","-c","/etc/snort/snort.conf","-i","eth0"]
+# Rendi eseguibile lo script
+RUN chmod +x /snort_start.sh
+
+ENTRYPOINT ["/snort_start.sh"]

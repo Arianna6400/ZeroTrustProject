@@ -1,26 +1,41 @@
 import argparse
 import requests
-import os
 import getpass
+import json
+import os
 
-# docker exec -it client_interattivo python3 /app/send_operation.py   --operazione lettura   --risorsa "Orario di visita"
+# Carica config.json nella stessa directory dello script
+CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
 
-# Argomenti da riga di comando
+def load_config(path):
+    try:
+        with open(path, "r") as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"⚠️ Errore nel caricamento di {path}: {e}")
+        return {}
+
+config = load_config(CONFIG_PATH)
+
 parser = argparse.ArgumentParser(description="Client dinamico per PEP")
 parser.add_argument("--username", help="Nome utente (interattivo se assente)")
 parser.add_argument("--password", help="Password (interattivo se assente)")
-parser.add_argument("--operazione", required=True, help="Operazione da eseguire (es: lettura, scrittura)")
-parser.add_argument("--risorsa", required=True, help="Risorsa da accedere (match con tipi_risorse.nome)")
+parser.add_argument("--operazione", required=True, help="Operazione (es: lettura, scrittura)")
+parser.add_argument("--risorsa", required=True, help="Risorsa da accedere (es: Cartella Clinica)")
 parser.add_argument("--rete", default="aziendale", help="Tipo di rete")
-parser.add_argument("--dispositivo", default="aziendale", help="Tipo del dispositivo")
-parser.add_argument("--pep-url", default="http://zta_pep:8002/operazione", help="Endpoint del PEP")
+parser.add_argument("--dispositivo", default="aziendale", help="Tipo di dispositivo")
+parser.add_argument("--pep-url", help="Override URL del PEP")
 args = parser.parse_args()
 
-# Prompt interattivo se non forniti
 username = args.username or input("Username: ")
-password = args.password or getpass.getpass("Password: ")  # ← sicuro
+password = args.password or getpass.getpass("Password: ")
 
-# Payload della richiesta
+pep_url = args.pep_url or config.get("pep_url")
+proxy_url = config.get("proxy_url")
+
+if not pep_url:
+    raise RuntimeError("❌ URL del PEP non specificato né in CLI né in config.json")
+
 payload = {
     "username": username,
     "password": password,
@@ -33,10 +48,16 @@ headers = {
     "X-Dispositivo": args.dispositivo
 }
 
-# 🚀 Invio della richiesta
-print("\nInvio richiesta al PEP...")
+proxies = {"http": proxy_url} if proxy_url else {}
+
+print("\n🚀 Invio richiesta al PEP...")
 try:
-    response = requests.post(args.pep_url, json=payload, headers=headers)
+    response = requests.post(
+        pep_url,
+        json=payload,
+        headers=headers,
+        proxies=proxies
+    )
     print("✅ Status:", response.status_code)
     print("📩 Risposta:", response.json())
 except Exception as e:
