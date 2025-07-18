@@ -39,7 +39,7 @@ def setup_logger():
 SPLUNK_HOST = must_get_env("SPLUNK_HOST")
 SPLUNK_USERNAME = must_get_env("SPLUNK_USERNAME")
 SPLUNK_PASSWORD = must_get_env("SPLUNK_PASSWORD")
-PDP_PORT    = int(must_get_env("PDP_PORT"))
+PDP_PORT = int(must_get_env("PDP_PORT"))
 
 app = Flask(__name__)
 
