@@ -42,9 +42,9 @@ def carica_policy_da_file(percorso):
 POLICIES = carica_policy_da_file(POLICY_FILE)
 
 # Trova policy che si applica al contesto
-def trova_policy(tipo_risorsa, operazione):
+def trova_policy(tipo_risorsa, operazione, soggetto):
     for policy in POLICIES:
-        if policy['risorsa'] == tipo_risorsa and policy['operazione'].lower() == operazione.lower():
+        if policy['risorsa'] == tipo_risorsa and policy['operazione'].lower() == operazione.lower() and soggetto in policy['ruoli_ammessi']:
             return policy
     return None
 
@@ -96,19 +96,17 @@ def gestisci_operazione():
         "risorsa": tipo_risorsa
     }
 
-    policy = trova_policy(tipo_risorsa, operazione)
+    policy = trova_policy(tipo_risorsa, operazione, soggetto)
 
     if policy:
-        if soggetto not in policy['ruoli_ammessi']:
-            return jsonify({"accesso": "negato", "motivo": "Ruolo non autorizzato per questa operazione"}), 403
-        if policy['rete_richiesta'] and rete != policy['rete_richiesta']:
+        if policy.get('rete_richiesta') and rete != policy['rete_richiesta']:
             return jsonify({"accesso": "negato", "motivo": "Rete non autorizzata per questa operazione"}), 403
         soglia = policy['soglia']
     else:
         if tipo_risorsa == "sensibile":
-            soglia = 0.8 if operazione.lower() == "scrittura" else 0.6
+            soglia = 0.9 if operazione.lower() == "scrittura" else 0.8
         else:
-            soglia = 0.5 if operazione.lower() == "scrittura" else 0.1
+            soglia = 0.7 if operazione.lower() == "scrittura" else 0.6
 
     try:
         risposta = requests.post(PDP_VALUTA, json=contesto)
