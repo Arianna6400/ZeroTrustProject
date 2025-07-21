@@ -5,7 +5,7 @@
     "risorsa": "sensibile",
     "operazione": "lettura",
     "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
-    "dispositivo_permesso": null,
+    "dispositivo_richiesto": null,
     "rete_richiesta": "aziendale",
     "soglia": 0.85
   },
@@ -15,7 +15,7 @@
     "risorsa": "sensibile",
     "operazione": "scrittura",
     "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
-    "dispositivo_permesso": ["Aziendale"],
+    "dispositivo_richiesto": ["Aziendale"],
     "rete_richiesta": "aziendale",
     "soglia": 0.9
   },
@@ -25,7 +25,7 @@
     "risorsa": "sensibile",
     "operazione": "lettura",
     "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
-    "dispositivo_permesso": null,
+    "dispositivo_richiesto": null,
     "rete_richiesta": ["vpn", "domestica"],
     "soglia": 0.9
   },
@@ -35,7 +35,7 @@
     "risorsa": "non_sensibile",
     "operazione": "lettura",
     "ruoli_ammessi": ["Guest", "Personale", "Amministratore", "Medico"],
-    "dispositivo_permesso": null,
+    "dispositivo_richiesto": null,
     "rete_richiesta": null,
     "soglia": 0.6
   },
@@ -45,7 +45,7 @@
     "risorsa": "non_sensibile",
     "operazione": "lettura",
     "ruoli_ammessi": ["Guest", "Personale", "Amministratore", "Medico"],
-    "dispositivo_permesso": ["privato"],
+    "dispositivo_richiesto": ["privato"],
     "rete_richiesta": "pubblica",
     "soglia": 0.75
   },
@@ -55,7 +55,7 @@
     "risorsa": "non_sensibile",
     "operazione": "scrittura",
     "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
-    "dispositivo_permesso": null,
+    "dispositivo_richiesto": null,
     "rete_richiesta": "aziendale",
     "soglia": 0.75
   },
@@ -65,7 +65,7 @@
     "risorsa": "sensibile",
     "operazione": "lettura",
     "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
-    "dispositivo_permesso": null,
+    "dispositivo_richiesto": null,
     "rete_richiesta": null,
     "emergenza": true,
     "soglia": 0.7

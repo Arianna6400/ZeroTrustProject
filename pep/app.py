@@ -60,7 +60,7 @@ POLICIES = carica_policy_da_file(POLICY_FILE)
 
 # Trova policy che si applica al contesto
 def trova_policy(context, policies):
-    ruolo = context.get("ruolo")
+    ruolo = context.get("soggetto")
     risorsa = context.get("risorsa")
     operazione = context.get("operazione")
     rete = context.get("rete")
@@ -68,13 +68,16 @@ def trova_policy(context, policies):
 
     candidate_policies = []
     for policy in policies:
-        if policy["risorsa"] != risorsa or policy["operazione"] != operazione:
+        if not all(k in policy for k in ["risorsa", "operazione", "ruoli_ammessi"]):
+            logging.warning(f"Policy incompleta ignorata: {policy}")
             continue
-        if ruolo not in policy["ruoli_ammessi"]:
+        if policy.get("risorsa") != risorsa or policy.get("operazione") != operazione:
             continue
-        if policy["rete_richiesta"] is not None and policy["rete_richiesta"] != rete:
+        if ruolo not in policy.get("ruoli_ammessi", []):
             continue
-        if policy["dispositivo_richiesto"] is not None and policy["dispositivo_richiesto"] != dispositivo:
+        if policy.get("rete_richiesta") is not None and policy.get("rete_richiesta") != rete:
+            continue
+        if policy.get("dispositivo_richiesto") is not None and policy.get("dispositivo_richiesto") != dispositivo:
             continue
         candidate_policies.append(policy)
 
