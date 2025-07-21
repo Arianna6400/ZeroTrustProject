@@ -4,16 +4,11 @@ echo "[INFO] Avvio Snort su interfacce disponibili..."
 mkdir -p /var/log/snort
 chmod -R a+rwx /var/log/snort
 
-for iface in $(ls /sys/class/net); do
-    LOGFILE="/var/log/snort/snort_${iface}.log"
+# Avvia socat proxy su 8002 (ascolta come fosse il PEP)
+socat TCP-LISTEN:8002,fork TCP:zta_pep:8002 &
 
-    if [[ "$iface" == "lo" ]]; then
-        echo "[INFO] Avvio Snort su interfaccia loopback ($iface) IN FOREGROUND per log visibile"
-        snort -A fast -c /etc/snort/snort.conf -i "$iface" -l /var/log/snort -K ascii
-    else
-        echo "[INFO] Avvio Snort su interfaccia $iface in background. Log: $LOGFILE"
-        snort -A fast -c /etc/snort/snort.conf -i "$iface" -l /var/log/snort -K ascii >> "$LOGFILE" 2>&1 &
-    fi
+for iface in eth0 eth1 eth2 eth3; do
+    snort -A fast -c /etc/snort/snort.conf -i "$iface" -l /var/log/snort -K ascii >> /var/log/snort/snort_${iface}.log 2>&1 &
 done
 
 wait

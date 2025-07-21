@@ -33,8 +33,8 @@ services:
       db:
         condition: service_healthy 
     environment:
-      DB_HOST: zta_postgres
-      DB_PORT: 5432
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
       DB_NAME: ${POSTGRES_DB}
       DB_USER: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
@@ -165,17 +165,7 @@ services:
     depends_on:
       - snort
 
-## CLIENT per test sviluppo + 4 client per test finale
-
-  client_interattivo:
-    build: ./client
-    container_name: client_interattivo
-    networks:
-      - network_aziendale
-    environment:
-      - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
-    stdin_open: true
-    tty: true
+## 4 client per ogni rete
 
   client_aziendale:
     build: ./client
