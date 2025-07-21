@@ -59,6 +59,13 @@ try:
         proxies=proxies
     )
     print("✅ Status:", response.status_code)
-    print("📩 Risposta:", response.json())
-except Exception as e:
+    try:
+        risposta_json = response.json()
+        print("📦 Risposta:")
+        print(json.dumps(risposta_json, indent=2, ensure_ascii=False))
+    except ValueError:
+        print("⚠️ La risposta non è in formato JSON:")
+        print(response.text)
+
+except requests.exceptions.RequestException as e:
     print("❌ Errore nella richiesta:", str(e))

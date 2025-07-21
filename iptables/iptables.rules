@@ -1,60 +1,91 @@
 *filter
 
+# ----------------------------
 # Politiche di default
+# ----------------------------
 :INPUT DROP [0:0]
 :FORWARD DROP [0:0]
 :OUTPUT ACCEPT [0:0]
 
-# ---------------------------
+# ----------------------------
 # Accesso base e sicurezza
-# ---------------------------
+# ----------------------------
 
-# Traffico localhost
+# Loopback
 -A INPUT -i lo -j ACCEPT
 
 # Connessioni già stabilite
 -A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
 
-# ---------------------------
-# Accesso SSH
-# ---------------------------
-
-# SSH da aziendale e VPN
+# ----------------------------
+# SSH access
+# ----------------------------
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 22 -j ACCEPT
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 22 -j ACCEPT
 
-# Blocco SSH da rete pubblica
+# Blocca SSH da rete pubblica
 -A INPUT -p tcp -s 10.10.4.0/24 --dport 22 -j DROP
 
-# ---------------------------
-# Accesso a servizi Zero Trust
-# ---------------------------
+# ----------------------------
+# Accesso ai servizi ZTA
+# ----------------------------
 
-# PEP (porta 8002) accessibile da:
+# PEP accessibile da reti fidate
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 8002 -j ACCEPT
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 8002 -j ACCEPT
 -A INPUT -p tcp -s 10.10.3.0/24 --dport 8002 -j ACCEPT
 
-# Blocco accesso a PEP da rete pubblica
+# Blocca accesso a PEP da rete pubblica
 -A INPUT -p tcp -s 10.10.4.0/24 --dport 8002 -j DROP
 
-# PDP accessibile solo da rete aziendale (in cui si trova il PEP)
+# PDP accessibile solo da rete aziendale
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 8001 -j ACCEPT
-
-# Blocco PDP da altri indirizzi
 -A INPUT -p tcp --dport 8001 -j DROP
 
-# Squid (3128) accessibile da reti fidate
+# Squid forward proxy (3128)
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 3128 -j ACCEPT
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 3128 -j ACCEPT
 -A INPUT -p tcp -s 10.10.3.0/24 --dport 3128 -j ACCEPT
 
-# ---------------------------
-# Protezione base da SYN flood
-# ---------------------------
+# Squid intercept proxy (3129)
+-A INPUT -p tcp --dport 3129 -j ACCEPT
+
+# ----------------------------
+# Protezione base SYN flood
+# ----------------------------
 -A INPUT -p tcp --syn --dport 80 -m limit --limit 1/s --limit-burst 5 -j ACCEPT
 
+# ----------------------------
+# Forward tra reti (abilitato)
+# ----------------------------
+-A FORWARD -i eth0 -o eth1 -j ACCEPT
+-A FORWARD -i eth1 -o eth0 -j ACCEPT
+-A FORWARD -i eth0 -o eth2 -j ACCEPT
+-A FORWARD -i eth2 -o eth0 -j ACCEPT
+-A FORWARD -i eth0 -o eth3 -j ACCEPT
+-A FORWARD -i eth3 -o eth0 -j ACCEPT
+-A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+
+# ----------------------------
 # Rifiuto finale
+# ----------------------------
 -A INPUT -j DROP
+
+COMMIT
+
+*nat
+
+# ----------------------------
+# NAT: Redireziona traffico verso Squid
+# ----------------------------
+:PREROUTING ACCEPT [0:0]
+:POSTROUTING ACCEPT [0:0]
+
+# Redirige traffico sulla porta 8002 verso Squid (3129)
+-A PREROUTING -p tcp --dport 8002 -j DNAT --to-port 3129
+
+# Per proxy trasparente completo (opzionale)
+# -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3129
+# -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3129
 
 COMMIT

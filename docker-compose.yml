@@ -50,8 +50,6 @@ services:
     depends_on:
       db:
         condition: service_healthy 
-    ports:
-      - "8002:8002"
     networks:
       - network_aziendale
       - network_vpn
@@ -65,14 +63,14 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - PEP_PORT=${PEP_PORT}
       - PDP_VALUTA=${PDP_VALUTA}
+    # ports:
+    #   - "8002:8002"
 
   pdp:
     build: ./pdp
     container_name: zta_pdp
     depends_on:
       - splunk
-    ports:
-      - "8001:8001"
     networks:
       - network_aziendale
     environment:
@@ -88,6 +86,8 @@ services:
     volumes:
       - pdp_logs:/mnt/pdp_logs
       - ./policies.json:/app/policies.json
+    # ports:
+    #   - "8001:8001"
 
   iptables:
     build: ./iptables
@@ -112,8 +112,6 @@ services:
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf
       - squid_logs:/var/log/squid
-    ports:
-      - "3129:3128"
     networks:
       - network_aziendale
       - network_vpn
@@ -122,6 +120,8 @@ services:
     depends_on:
       - iptables
       - pep
+    # ports:
+    #   - "3129:3129" # proxy intercettato
 
   snort:
     build: ./snort  

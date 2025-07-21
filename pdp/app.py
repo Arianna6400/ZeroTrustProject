@@ -53,10 +53,10 @@ BASE_TRUST = {
 }
 
 NETWORK_TRUST = {
-    "network_aziendale": 0.3,
-    "network_vpn": 0.15,
-    "network_domestica": 0.05,
-    "network_pubblica": -0.05
+    "aziendale": 0.3,
+    "vpn": 0.15,
+    "domestica": 0.05,
+    "pubblica": -0.05
 }
 
 DEVICE_TRUST = {
