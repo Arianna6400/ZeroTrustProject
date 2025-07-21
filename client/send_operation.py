@@ -3,6 +3,7 @@ import requests
 import getpass
 import json
 import os
+import socket
 
 # Carica config.json nella stessa directory dello script
 CONFIG_PATH = os.path.join(os.path.dirname(__file__), "config.json")
@@ -36,6 +37,11 @@ proxy_url = config.get("proxy_url")
 if not pep_url:
     raise RuntimeError("❌ URL del PEP non specificato né in CLI né in config.json")
 
+try:
+    ip_locale = socket.gethostbyname(socket.gethostname())
+except Exception:
+    ip_locale = "sconosciuto"
+
 payload = {
     "username": username,
     "password": password,
@@ -45,7 +51,8 @@ payload = {
 
 headers = {
     "X-Rete": args.rete,
-    "X-Dispositivo": args.dispositivo
+    "X-Dispositivo": args.dispositivo,
+    "X-IP": ip_locale
 }
 
 proxies = {"http": proxy_url} if proxy_url else {}

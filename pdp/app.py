@@ -45,32 +45,26 @@ app = Flask(__name__)
 
 setup_logger()
 
-BASE_TRUST = {
-    "amministratore": 0.6,
-    "personale": 0.4,
-    "guest": 0.2,
-    "sconosciuto": 0.1,
-}
-
-NETWORK_TRUST = {
-    "aziendale": 0.3,
-    "vpn": 0.15,
-    "domestica": 0.05,
-    "pubblica": -0.05
-}
-
-DEVICE_TRUST = {
-    "aziendale": 0.08,
-    "privato": 0.04,
+# PESI (devono sommare a 1.0)
+WEIGHTS = {
+    "ruolo": 0.25,
+    "rete": 0.15,
+    "dispositivo": 0.10,
+    "squid": 0.15,
+    "snort": 0.20,
+    "pep": 0.15
 }
 
 PENALTY_SQUID = 0.1
-PENALTY_SNORT_1 = 0.15
-PENALTY_SNORT_2 = 0.07
+BONUS_SQUID = 0.02
+PENALTY_SNORT_1 = 0.2
+PENALTY_SNORT_2 = 0.1
+PENALTY_PEP_FAIL_IP = 0.05
+PENALTY_PEP_FAIL_USER = 0.03
+BONUS_PEP = 0.01
 
 TRUST_CAP = 1.0
 TRUST_FLOOR = 0.0
-
 
 def splunk_search(index, term, limit=10, earliest_time=None):
     if not SPLUNK_USERNAME or not SPLUNK_PASSWORD:
@@ -114,38 +108,118 @@ def splunk_search(index, term, limit=10, earliest_time=None):
         logging.error(f"Splunk search failed: {e}")
         return []
 
+# Punteggio base ruolo: già da 0 a 1
+BASE_TRUST = {
+    "amministratore": 1.0,
+    "personale": 0.7,
+    "guest": 0.4,
+    "sconosciuto": 0.2,
+}
+
+NETWORK_SCORE = {
+    "aziendale": 1.0,
+    "vpn": 0.8,
+    "domestica": 0.5,
+    "pubblica": 0.3
+}
+
+DEVICE_SCORE = {
+    "aziendale": 1.0,
+    "privato": 0.6
+}
+
+def score_squid(logs):
+    penalty_codes = ["TCP_DENIED", "TCP_RESET", "TCP_HIT/403", "TCP_MISS/403", "TCP_DENIED/403"]
+    bonus_codes = ["TCP_HIT/200", "TCP_MISS/200", "TCP_REFRESH_HIT", "TCP_IMS_HIT"]
+
+    denied_count = 0
+    success_count = 0
+
+    for log in logs:
+        raw = log.get("_raw", "")
+        if any(code in raw for code in penalty_codes):
+            denied_count += 1
+        elif any(code in raw for code in bonus_codes):
+            success_count += 1
+
+    score = 1 - (PENALTY_SQUID * denied_count) + (BONUS_SQUID * success_count)
+    score = min(max(score, 0.0), 1.0)
+
+    logging.info(f"Squid score = {score:.2f} (deny={denied_count}, success={success_count})")
+    return score
+
+def score_snort(logs):
+    p1 = sum(1 for log in logs if "[Priority: 1]" in log.get("_raw", ""))
+    p2 = sum(1 for log in logs if "[Priority: 2]" in log.get("_raw", ""))
+    p3 = sum(1 for log in logs if "[Priority: 3]" in log.get("_raw", ""))
+
+    score = 1 - (PENALTY_SNORT_1 * p1 + PENALTY_SNORT_2 * p2)
+
+    # Bonus: se nessun P1/P2, e ci sono log, premia comportamento "pulito"
+    if p1 == 0 and p2 == 0 and len(logs) > 0:
+        bonus = 0.05 + (0.01 * min(p3, 5))  # massimo bonus 0.10
+        score += bonus
+        logging.info(f"Snort: bonus {bonus:.2f} per traffico monitorato con solo Priority 3")
+
+    score = min(max(score, 0.0), 1.0)
+    logging.info(f"Snort score = {score:.2f} (P1={p1}, P2={p2}, P3={p3})")
+    return score
+
+def score_pep(ip_client, username):
+    # Accessi negati
+    fail_logs_ip = splunk_search("pep", f"IP: {ip_client} Accesso: negato", 20, earliest_time="-10m")
+    fail_logs_user = splunk_search("pep", f"Utente: {username} Accesso: negato", 20, earliest_time="-10m")
+    fail_score_ip = max(0, 1 - PENALTY_PEP_FAIL_IP * len(fail_logs_ip))
+    fail_score_user = max(0, 1 - PENALTY_PEP_FAIL_USER * len(fail_logs_user))
+
+    # Accessi concessi (positivi)
+    success_logs_user = splunk_search("pep", f"Utente: {username} Accesso: concesso", 20, earliest_time="-10m")
+    success_logs_ip = splunk_search("pep", f"IP: {ip_client} Accesso: concesso", 20, earliest_time="-10m")
+    success_bonus = BONUS_PEP * (len(success_logs_user) + len(success_logs_ip))
+    success_bonus = min(success_bonus, 0.1)  # max bonus
+
+    # Score medio tra IP e User, poi aggiungo bonus
+    base_score = (fail_score_ip + fail_score_user) / 2
+    score = min(base_score + success_bonus, 1.0)
+
+    logging.info(
+        f"PEP score = {score:.2f} (fail_ip={len(fail_logs_ip)}, fail_user={len(fail_logs_user)}, "
+        f"success_user={len(success_logs_user)}, success_ip={len(success_logs_ip)}, bonus={success_bonus:.2f})"
+    )
+    return score
 
 def calculate_trust(context):
     ruolo = context.get("soggetto", "").lower()
     rete = context.get("rete", "").lower()
     dispositivo = context.get("dispositivo", "").lower()
+    ip_client = context.get("ip_client", "").lower()
+    username = context.get("username", "").lower()
 
-    trust = BASE_TRUST.get(ruolo, 0.1)
-    trust += NETWORK_TRUST.get(rete, 0)
-    trust += DEVICE_TRUST.get(dispositivo, 0)
+    ruolo_score = BASE_TRUST.get(ruolo, 0.2)
+    rete_score = NETWORK_SCORE.get(rete, 0.3)
+    dispositivo_score = DEVICE_SCORE.get(dispositivo, 0.5)
 
-    logging.info(f"Valutazione iniziale: ruolo={ruolo}, rete={rete}, dispositivo={dispositivo}, trust iniziale={trust}")
+    squid_logs = splunk_search("squid", ip_client, 10, earliest_time="-2m")
+    squid_score = score_squid(squid_logs)
 
-    squid_logs = splunk_search("squid", rete, 10, earliest_time="-2m")
-    for log in squid_logs:
-        raw = log.get("_raw", "")
-        if "TCP_DENIED/403" in raw:
-            trust -= PENALTY_SQUID
-            logging.info("Accesso negato da squid -> penalità -0.1")
+    snort_logs = splunk_search("snort", ip_client, 10, earliest_time="-2m")
+    snort_score = score_snort(snort_logs)
 
-    snort_logs = splunk_search("snort", rete, 10, earliest_time="-2m")
-    for log in snort_logs:
-        raw = log.get("_raw", "")
-        if "[Priority: 1]" in raw:
-            trust -= PENALTY_SNORT_1
-            logging.info("Snort alert Priority 1 -> penalità -0.15")
-        elif "[Priority: 2]" in raw:
-            trust -= PENALTY_SNORT_2
-            logging.info("Snort alert Priority 2 -> penalità -0.07")
+    pep_score = score_pep(ip_client, username)
 
-    trust = round(max(TRUST_FLOOR, min(TRUST_CAP, trust)), 2)
+    trust = (
+        WEIGHTS["ruolo"] * ruolo_score +
+        WEIGHTS["rete"] * rete_score +
+        WEIGHTS["dispositivo"] * dispositivo_score +
+        WEIGHTS["squid"] * squid_score +
+        WEIGHTS["snort"] * snort_score +
+        WEIGHTS["pep"] * pep_score
+    )
+
+    trust = round(min(max(trust, TRUST_FLOOR), TRUST_CAP), 2)
+
+    logging.info(f"Trust finale calcolata: {trust:.2f}")
     return trust
-
 
 @app.route("/valuta", methods=["POST"])
 def valuta():

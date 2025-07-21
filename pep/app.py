@@ -15,15 +15,32 @@ PEP_PORT = int(os.getenv('PEP_PORT'))
 PDP_VALUTA = os.getenv('PDP_VALUTA')
 POLICY_FILE = os.getenv('POLICY_FILE', 'policies.json')
 
-# 🔐 Connessione al database
-conn = psycopg2.connect(
-    host=os.environ['DB_HOST'],
-    port=os.environ['DB_PORT'],
-    dbname=os.environ['DB_NAME'],
-    user=os.environ['DB_USER'],
-    password=os.environ['DB_PASSWORD']
+# 📁 Configura logging su file
+LOG_FILE = '/mnt/pep_logs/pep.log'
+os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s [%(levelname)s] %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE),
+        logging.StreamHandler()
+    ]
 )
-cur = conn.cursor()
+
+try:
+    conn = psycopg2.connect(
+        host=os.environ['DB_HOST'],
+        port=os.environ['DB_PORT'],
+        dbname=os.environ['DB_NAME'],
+        user=os.environ['DB_USER'],
+        password=os.environ['DB_PASSWORD']
+    )
+    cur = conn.cursor()
+    logging.info("Connessione al database riuscita.")
+except Exception as db_err:
+    logging.error(f"Errore nella connessione al database: {db_err}")
+    raise db_err
 
 # 🔑 Funzione per hash della password
 
@@ -51,6 +68,7 @@ def trova_policy(tipo_risorsa, operazione, soggetto):
 @app.route('/operazione', methods=['POST'])
 def gestisci_operazione():
     dati = request.get_json()
+    logging.info(f"Richiesta ricevuta: {dati}")
 
     username = dati.get("username")
     password = dati.get("password")
@@ -59,6 +77,8 @@ def gestisci_operazione():
 
     rete_header = request.headers.get("X-Rete", "sconosciuta").lower()
     rete = rete_header.split(',')[0].strip()
+    
+    ip_client = request.headers.get("X-IP", request.remote_addr)
 
     dispositivo_header = request.headers.get("X-Dispositivo", "sconosciuto")
     dispositivo = dispositivo_header.split(',')[0].strip()
@@ -74,6 +94,7 @@ def gestisci_operazione():
     )
     user_row = cur.fetchone()
     if not user_row:
+        logging.warning(f"Login fallito per utente '{username}' da IP {ip_client}")
         return jsonify({"errore": "Credenziali non valide"}), 401
 
     soggetto = user_row[0]
@@ -93,7 +114,9 @@ def gestisci_operazione():
         "rete": rete,
         "dispositivo": dispositivo,
         "operazione": operazione,
-        "risorsa": tipo_risorsa
+        "risorsa": tipo_risorsa,
+        "ip_client": ip_client,
+        "username": username
     }
 
     policy = trova_policy(tipo_risorsa, operazione, soggetto)
@@ -117,9 +140,13 @@ def gestisci_operazione():
             return jsonify({"errore": f"PDP ha risposto ma non in formato JSON: {str(json_err)}"}), 500
     except requests.exceptions.RequestException as e:
         return jsonify({"errore": f"Errore nella valutazione PDP: {str(e)}"}), 500
+    
+    logging.info(f"Risposta PDP: fiducia={fiducia:.2f}, soglia={soglia:.2f}")
+
+    accesso = "concesso" if fiducia >= soglia else "negato"
 
     risultato = {
-    "accesso": "concesso" if fiducia >= soglia else "negato",
+    "accesso": accesso,
     "soggetto": soggetto,
     "operazione": operazione,
     "risorsa": tipo_risorsa,
@@ -133,8 +160,12 @@ def gestisci_operazione():
         }
     }
 
+    logging.info(
+    f"Utente: {username} | IP: {ip_client} | Operazione: {operazione} su risorsa: {risorsa} | "
+    f"Ruolo: {soggetto} | Accesso: {accesso} (fiducia={fiducia:.2f}, soglia={soglia:.2f})"
+)
 
-    return jsonify(risultato), 200 if fiducia >= soglia else 403
+    return jsonify(risultato), 200 if accesso == "concesso" else 403
 
 
 if __name__ == '__main__':

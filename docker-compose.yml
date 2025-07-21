@@ -43,6 +43,8 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - PEP_PORT=${PEP_PORT}
       - PDP_VALUTA=${PDP_VALUTA}
+    volumes:
+      - pep_logs:/mnt/pep_logs
     # ports:
     #   - "8002:8002"
 
@@ -142,6 +144,7 @@ services:
       - squid_logs:/mnt/squid_logs
       - postgres_logs:/mnt/postgres_logs
       - pdp_logs:/mnt/pdp_logs
+      - pep_logs:/mnt/pep_logs
     depends_on:
       - snort
 
@@ -203,6 +206,8 @@ volumes:
   postgres_logs:
     driver: local
   pdp_logs:
+    driver: local
+  pep_logs:
     driver: local
 
 networks:
