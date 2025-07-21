@@ -1,74 +1,79 @@
 [
-    {
-        "nome": "Accesso dati sanitari Medico",
-        "descrizione": "Solo Medico o Amministratore possono accedere a dati sanitari",
-        "risorsa": "sensibile",
-        "operazione": "lettura",
-        "ruoli_ammessi": ["Amministratore", "Medico"],
-        "rete_richiesta": null,
-        "soglia": 0.8
-    },
-    {
-        "nome": "Accesso dati sanitari Medico (scrittura)",
-        "descrizione": "Solo Medico o Amministratore possono accedere a dati sanitari",
-        "risorsa": "sensibile",
-        "operazione": "scrittura",
-        "ruoli_ammessi": ["Amministratore", "Medico"],
-        "rete_richiesta": null,
-        "soglia": 0.9
-    },
-    {
-        "nome": "Accesso tramite dispositivi personali autorizzati",
-        "descrizione": "Accesso ai dati sanitari consentito anche da dispositivi personali",
-        "risorsa": "non_sensibile",
-        "operazione": "lettura",
-        "ruoli_ammessi": ["Amministratore", "Medico","Personale","Guest"],
-        "rete_richiesta": null,
-        "soglia": 0.6
-    },
-    {
-        "nome": "Accesso tramite dispositivi personali autorizzati (scrittura)",
-        "descrizione": "Accesso ai dati sanitari consentito anche da dispositivi personali",
-        "risorsa": "non_sensibile",
-        "operazione": "scrittura",
-        "ruoli_ammessi": ["Amministratore", "Medico", "Personale", "Guest"],
-        "rete_richiesta": null,
-        "soglia": 0.7
-    },
-    {
-        "nome": "Accesso in caso di emergenza",
-        "descrizione": "Accesso urgente in caso di emergenza sanitaria fuori orario",
-        "risorsa": "sensibile",
-        "operazione": "lettura",
-        "ruoli_ammessi": ["Personale", "Amministratore", "Medico"],
-        "rete_richiesta": null,
-        "soglia": 0.8
-    },
-    {
-        "nome": "Accesso dati sanitari Personale sanitario",
-        "descrizione": "Solo personale sanitario in rete aziendale può accedere a dati sensibili",
-        "risorsa": "sensibile",
-        "operazione": "lettura",
-        "ruoli_ammessi": ["Medico", "Personale"],
-        "rete_richiesta": "aziendale",
-        "soglia": 0.8
-    },
-    {
-        "nome": "Accesso dati sanitari Personale sanitario (scrittura)",
-        "descrizione": "Solo personale sanitario in rete aziendale può accedere a dati sensibili",
-        "risorsa": "sensibile",
-        "operazione": "scrittura",
-        "ruoli_ammessi": ["Medico","Personale"],
-        "rete_richiesta": "aziendale",
-        "soglia": 0.9
-    },
-    {
-        "nome": "Dispositivi compromessi o non protetti",
-        "descrizione": "Accesso negato da dispositivi compromessi",
-        "risorsa": "non_sensibile",
-        "operazione": "lettura",
-        "ruoli_ammessi": ["Personale", "Amministratore", "Guest"],
-        "rete_richiesta": null,
-        "soglia": 0.6
-    }
+  {
+    "nome": "Accesso dati sanitari sensibili - lettura in rete aziendale",
+    "descrizione": "Medico, Personale e Amministratore possono leggere dati sensibili solo da rete aziendale",
+    "risorsa": "sensibile",
+    "operazione": "lettura",
+    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "dispositivo_permesso": null,
+    "rete_richiesta": "aziendale",
+    "soglia": 0.85
+  },
+  {
+    "nome": "Accesso dati sanitari sensibili - scrittura in rete aziendale",
+    "descrizione": "Medico, Personale e Amministratore possono scrivere dati sensibili solo da rete aziendale",
+    "risorsa": "sensibile",
+    "operazione": "scrittura",
+    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "dispositivo_permesso": ["Aziendale"],
+    "rete_richiesta": "aziendale",
+    "soglia": 0.9
+  },
+  {
+    "nome": "Accesso dati sanitari sensibili - lettura da rete non aziendale (VPN o domestica)",
+    "descrizione": "Accesso limitato in lettura da ruoli sanitari tramite VPN o rete domestica con soglia più alta",
+    "risorsa": "sensibile",
+    "operazione": "lettura",
+    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "dispositivo_permesso": null,
+    "rete_richiesta": ["vpn", "domestica"],
+    "soglia": 0.9
+  },
+  {
+    "nome": "Accesso dati non sensibili - lettura da qualsiasi rete",
+    "descrizione": "Guest, Personale, Amministratore e Medico possono leggere dati non sensibili da qualsiasi rete e dispositivo",
+    "risorsa": "non_sensibile",
+    "operazione": "lettura",
+    "ruoli_ammessi": ["Guest", "Personale", "Amministratore", "Medico"],
+    "dispositivo_permesso": null,
+    "rete_richiesta": null,
+    "soglia": 0.6
+  },
+  {
+    "nome": "Accesso dati non sensibili - lettura da rete pubblica",
+    "descrizione": "Accesso a dati non sensibili consentito con restrizioni da rete pubblica",
+    "risorsa": "non_sensibile",
+    "operazione": "lettura",
+    "ruoli_ammessi": ["Guest", "Personale", "Amministratore", "Medico"],
+    "dispositivo_permesso": ["privato"],
+    "rete_richiesta": "pubblica",
+    "soglia": 0.75
+  },
+  {
+    "nome": "Accesso dati non sensibili - scrittura da rete aziendale",
+    "descrizione": "Amministratore, Medico e Personale possono scrivere dati non sensibili solo da rete aziendale",
+    "risorsa": "non_sensibile",
+    "operazione": "scrittura",
+    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "dispositivo_permesso": null,
+    "rete_richiesta": "aziendale",
+    "soglia": 0.75
+  },
+  {
+    "nome": "Accesso in emergenza",
+    "descrizione": "Accesso urgente a dati sensibili per ruoli sanitari anche fuori orario e rete",
+    "risorsa": "sensibile",
+    "operazione": "lettura",
+    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "dispositivo_permesso": null,
+    "rete_richiesta": null,
+    "emergenza": true,
+    "soglia": 0.7
+  },
+  {
+    "nome": "Accesso negato da dispositivi compromessi",
+    "descrizione": "Accesso negato da dispositivi compromessi o non protetti",
+    "dispositivo_compromesso": true,
+    "soglia": 0.0
+  }
 ]

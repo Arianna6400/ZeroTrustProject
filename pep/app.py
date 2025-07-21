@@ -59,11 +59,33 @@ def carica_policy_da_file(percorso):
 POLICIES = carica_policy_da_file(POLICY_FILE)
 
 # Trova policy che si applica al contesto
-def trova_policy(tipo_risorsa, operazione, soggetto):
-    for policy in POLICIES:
-        if policy['risorsa'] == tipo_risorsa and policy['operazione'].lower() == operazione.lower() and soggetto in policy['ruoli_ammessi']:
-            return policy
-    return None
+def trova_policy(context, policies):
+    ruolo = context.get("ruolo")
+    risorsa = context.get("risorsa")
+    operazione = context.get("operazione")
+    rete = context.get("rete")
+    dispositivo = context.get("dispositivo")
+
+    candidate_policies = []
+    for policy in policies:
+        if policy["risorsa"] != risorsa or policy["operazione"] != operazione:
+            continue
+        if ruolo not in policy["ruoli_ammessi"]:
+            continue
+        if policy["rete_richiesta"] is not None and policy["rete_richiesta"] != rete:
+            continue
+        if policy["dispositivo_richiesto"] is not None and policy["dispositivo_richiesto"] != dispositivo:
+            continue
+        candidate_policies.append(policy)
+
+    if not candidate_policies:
+        logging.warning(f"Nessuna policy applicabile trovata per il contesto: {context}")
+        return None
+
+    # Se più policy sono valide, scegli quella con la soglia più alta
+    selected = max(candidate_policies, key=lambda p: p["soglia"])
+    logging.info(f"Policy selezionata: {selected['nome']} con soglia {selected['soglia']}")
+    return selected
 
 @app.route('/operazione', methods=['POST'])
 def gestisci_operazione():
@@ -77,7 +99,7 @@ def gestisci_operazione():
 
     rete_header = request.headers.get("X-Rete", "sconosciuta").lower()
     rete = rete_header.split(',')[0].strip()
-    
+
     ip_client = request.headers.get("X-IP", request.remote_addr)
 
     dispositivo_header = request.headers.get("X-Dispositivo", "sconosciuto")
@@ -119,17 +141,16 @@ def gestisci_operazione():
         "username": username
     }
 
-    policy = trova_policy(tipo_risorsa, operazione, soggetto)
+    policy = trova_policy(contesto, POLICIES)
 
     if policy:
-        if policy.get('rete_richiesta') and rete != policy['rete_richiesta']:
-            return jsonify({"accesso": "negato", "motivo": "Rete non autorizzata per questa operazione"}), 403
         soglia = policy['soglia']
     else:
-        if tipo_risorsa == "sensibile":
-            soglia = 0.9 if operazione.lower() == "scrittura" else 0.8
-        else:
-            soglia = 0.7 if operazione.lower() == "scrittura" else 0.6
+        logging.info(f"Accesso negato - Nessuna policy applicabile per il contesto")
+        return jsonify({
+            "esito": "negato",
+            "motivazione": "Nessuna policy applicabile per il contesto richiesto"
+        }), 403
 
     try:
         risposta = requests.post(PDP_VALUTA, json=contesto)

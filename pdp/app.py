@@ -55,6 +55,26 @@ WEIGHTS = {
     "pep": 0.15
 }
 
+# Punteggio base ruolo: già da 0 a 1
+BASE_TRUST = {
+    "amministratore": 1.0,
+    "personale": 0.7,
+    "guest": 0.4,
+    "sconosciuto": 0.2,
+}
+
+NETWORK_SCORE = {
+    "aziendale": 1.0,
+    "vpn": 0.8,
+    "domestica": 0.5,
+    "pubblica": 0.3
+}
+
+DEVICE_SCORE = {
+    "aziendale": 1.0,
+    "privato": 0.6
+}
+
 PENALTY_SQUID = 0.1
 BONUS_SQUID = 0.02
 PENALTY_SNORT_1 = 0.2
@@ -107,26 +127,6 @@ def splunk_search(index, term, limit=10, earliest_time=None):
     except Exception as e:
         logging.error(f"Splunk search failed: {e}")
         return []
-
-# Punteggio base ruolo: già da 0 a 1
-BASE_TRUST = {
-    "amministratore": 1.0,
-    "personale": 0.7,
-    "guest": 0.4,
-    "sconosciuto": 0.2,
-}
-
-NETWORK_SCORE = {
-    "aziendale": 1.0,
-    "vpn": 0.8,
-    "domestica": 0.5,
-    "pubblica": 0.3
-}
-
-DEVICE_SCORE = {
-    "aziendale": 1.0,
-    "privato": 0.6
-}
 
 def score_squid(logs):
     penalty_codes = ["TCP_DENIED", "TCP_RESET", "TCP_HIT/403", "TCP_MISS/403", "TCP_DENIED/403"]
