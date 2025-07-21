@@ -1,42 +1,21 @@
-# ============================================
-# Snort Local Rules - ZTA Security Policies
-# ============================================
+# === [ZTA] Regole base di visibilità e debug ===
+alert tcp any any -> any any (msg:"[ZTA] Traffico TCP generico"; sid:1000001; rev:1; priority:2;)
+alert udp any any -> any any (msg:"[ZTA] Traffico UDP generico"; sid:1000007; rev:1; priority:2;)
+alert ip any any -> any any (msg:"[ZTA] Pacchetto IP rilevato"; sid:1000008; rev:1; priority:2;)
 
-# === Minacce generiche e pattern noti ===
+# === [ZTA] Rilevamento traffico verso il PEP ===
+alert tcp any any -> any 8002 (msg:"[ZTA] POST diretto al PEP"; content:"POST"; sid:1000002; rev:3; priority:1;)
+alert tcp any any -> any 8002 (msg:"[ZTA] Connessione TCP verso PEP (8002)"; sid:1000999; rev:2;)
 
-alert ip any any -> any any (msg:"Traffico IP trovato"; sid:1000001; rev:1;)
+# === [ZTA] Rilevamento traffico verso Squid (se ancora presente per debug/log) ===
+alert tcp any any -> any 3128 (msg:"[ZTA] Accesso a Squid (esplicito)"; sid:1000003; rev:1; priority:1;)
+alert tcp any any -> any 3129 (msg:"[ZTA] Accesso a Squid (intercettato)"; sid:1000004; rev:1; priority:2;)
+alert tcp any any -> any 3129 (msg:"[ZTA] POST al proxy intercettato"; content:"POST"; sid:1000012; rev:2; priority:1;)
 
-alert tcp $EXTERNAL_NET any -> $HOME_NET 80 (msg:"SQL Injection Attempt - UNION SELECT"; content:"union select"; sid:1000002; rev:1; priority:1;)
-alert tcp $HOME_NET any -> $EXTERNAL_NET 443 (msg:"Suspicious HTTPS traffic"; flags: S; sid:1000003; rev:1; priority:2;)
-alert tcp $EXTERNAL_NET any -> $HOME_NET 21 (msg:"FTP Buffer Overflow Attempt"; content:"USER"; sid:1000004; rev:1; priority:1;)
-alert ip $EXTERNAL_NET any -> $HOME_NET any (msg:"Possible DDoS detected - Large packet size"; dsize:>1400; flow:to_server; sid:1000005; rev:1; priority:1;)
-alert tcp $EXTERNAL_NET any -> $HOME_NET 445 (msg:"MS SMB Vulnerability Exploit"; content:"|45 00 00 00|"; sid:1000006; rev:1; priority:1;)
-alert tcp any any -> $HOME_NET any (msg:"TCP SYN Scan (port scan)"; flags:S; flow:stateless; sid:2000003; rev:1; priority:2;)
-alert tcp any any -> $HOME_NET [81,9999,12345] (msg:"Accesso a porte sospette"; sid:2000004; rev:1; priority:2;)
+# === [ZTA] Rilevamento DoS e scansioni sul PEP ===
+alert tcp any any -> any 8002 (msg:"[ZTA] Possibile POST DoS su PEP"; content:"POST"; threshold:type both, track by_src, count 3, seconds 5; sid:1000005; rev:2; priority:1;)
+alert tcp any any -> any 8002 (msg:"[ZTA] Possibile scansione SYN su 8002"; flags:S; threshold:type both, track by_src, count 5, seconds 10; sid:1000006; rev:1; priority:2;)
 
-# === Contesto ZTA - Regole di monitoraggio ===
-
-# Accesso PEP da rete pubblica (non ammesso)
-alert tcp [10.10.4.0/24] any -> $HOME_NET 8002 (msg:"Tentativo di accesso a PEP da rete pubblica"; sid:2000001; rev:1; priority:1;)
-
-# Accesso diretto al PDP da host non autorizzato
-alert tcp !$HOME_NET any -> $HOME_NET 8001 (msg:"Accesso PDP da fonte non autorizzata"; sid:2000002; rev:1; priority:1;)
-
-# Accesso SSH da rete pubblica (non ammesso)
-alert tcp [10.10.4.0/24] any -> $HOME_NET 22 (msg:"Tentativo SSH da rete pubblica"; sid:2000005; rev:1; priority:2;)
-
-# ============================================
-# Policy Zero Trust Enforcement (PDP Mirror)
-# ============================================
-
-# Scrittura verso risorsa sensibile da rete pubblica
-alert tcp [10.10.4.0/24] any -> $HOME_NET 8002 (msg:"ZTA POLICY VIOLATION: Scrittura su risorsa sensibile da rete pubblica"; content:"scrittura"; nocase; sid:3000001; rev:1; priority:1;)
-
-# POST sospetto da rete domestica (privato)
-alert tcp [10.10.3.0/24] any -> $HOME_NET 8002 (msg:"ZTA WARNING: POST da rete domestica (possibile dispositivo privato)"; content:"POST"; http_method; sid:3000002; rev:1; priority:2;)
-
-# Accesso PDP diretto non tramite PEP
-alert tcp !$HOME_NET any -> $HOME_NET 8001 (msg:"ZTA POLICY VIOLATION: Accesso diretto al PDP non da PEP"; sid:3000003; rev:1; priority:1;)
-
-# Accesso con ruolo sconosciuto
-alert tcp any any -> $HOME_NET 8002 (msg:"ZTA RISK: Accesso da ruolo sconosciuto"; content:"sconosciuto"; nocase; sid:3000004; rev:1; priority:2;)
+# === [ZTA] Rilevamento traffico outbound HTTP da Squid (solo in chiaro) ===
+alert tcp any any -> any 80 (msg:"[ZTA] HTTP outbound via Squid"; content:"Host:"; sid:1000010; rev:1; priority:1;)
+alert tcp any any -> any 80 (msg:"[ZTA] URI sensibile (Cartella Clinica)"; content:"Cartella.Clinica"; sid:1000011; rev:1; priority:1;)

@@ -24,6 +24,26 @@ services:
     ports:
       - "5433:5432"
 
+  db_seeder:
+    build:
+      context: ./db
+      dockerfile: Dockerfile.seeder
+    container_name: zta_db_seeder
+    depends_on:
+      db:
+        condition: service_healthy 
+    environment:
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      DB_NAME: ${POSTGRES_DB}
+      DB_USER: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+    command: bash -c "until pg_isready -h $DB_HOST -p $DB_PORT; do echo 'Waiting for PostgreSQL...'; sleep 2; done; python3 /docker-entrypoint-initdb.d/seed.py"  # Esegui lo script di seeding
+    volumes:
+      - ./db/seed.py:/docker-entrypoint-initdb.d/seed.py
+    networks:
+      - network_aziendale    
+
   pep:
     build: ./pep
     container_name: zta_pep   
@@ -148,17 +168,7 @@ services:
     depends_on:
       - snort
 
-## CLIENT per test sviluppo + 4 client per test finale
-
-  client_interattivo:
-    build: ./client
-    container_name: client_interattivo
-    networks:
-      - network_aziendale
-    environment:
-      - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
-    stdin_open: true
-    tty: true
+## 4 client per ogni rete
 
   client_aziendale:
     build: ./client

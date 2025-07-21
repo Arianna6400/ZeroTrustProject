@@ -1,91 +1,81 @@
 *filter
 
-# ----------------------------
 # Politiche di default
-# ----------------------------
 :INPUT DROP [0:0]
 :FORWARD DROP [0:0]
 :OUTPUT ACCEPT [0:0]
 
-# ----------------------------
-# Accesso base e sicurezza
-# ----------------------------
-
-# Loopback
+# === Accesso di base ===
 -A INPUT -i lo -j ACCEPT
+-A INPUT -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# Connessioni già stabilite
--A INPUT -m state --state ESTABLISHED,RELATED -j ACCEPT
+# === Protezioni base (DoS e scansioni) ===
 
-# ----------------------------
-# SSH access
-# ----------------------------
+# Filtro SYN flood base
+-N DOS_FILTER
+-A DOS_FILTER -m limit --limit 50/second --limit-burst 100 -j RETURN
+-A DOS_FILTER -j DROP
+-A INPUT   -p tcp --syn -j DOS_FILTER
+-A FORWARD -p tcp --syn -j DOS_FILTER
+
+# Limitazione connessioni per IP
+-A INPUT -p tcp --syn -m connlimit --connlimit-above 20 --connlimit-mask 32 -j REJECT
+-A FORWARD -p tcp --syn -m connlimit --connlimit-above 20 --connlimit-mask 32 -j REJECT
+
+# Rate limit ICMP
+-A INPUT -p icmp --icmp-type echo-request -m limit --limit 10/s --limit-burst 20 -j ACCEPT
+-A INPUT -p icmp --icmp-type echo-request -j DROP
+
+# === Accesso SSH (solo da reti fidate) ===
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 22 -j ACCEPT
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 22 -j ACCEPT
-
-# Blocca SSH da rete pubblica
 -A INPUT -p tcp -s 10.10.4.0/24 --dport 22 -j DROP
 
-# ----------------------------
-# Accesso ai servizi ZTA
-# ----------------------------
-
-# PEP accessibile da reti fidate
+# === Accesso PEP / PDP / Squid ===
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 8002 -j ACCEPT
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 8002 -j ACCEPT
 -A INPUT -p tcp -s 10.10.3.0/24 --dport 8002 -j ACCEPT
-
-# Blocca accesso a PEP da rete pubblica
 -A INPUT -p tcp -s 10.10.4.0/24 --dport 8002 -j DROP
 
-# PDP accessibile solo da rete aziendale
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 8001 -j ACCEPT
 -A INPUT -p tcp --dport 8001 -j DROP
 
-# Squid forward proxy (3128)
 -A INPUT -p tcp -s 10.10.1.0/24 --dport 3128 -j ACCEPT
 -A INPUT -p tcp -s 10.10.2.0/24 --dport 3128 -j ACCEPT
 -A INPUT -p tcp -s 10.10.3.0/24 --dport 3128 -j ACCEPT
 
-# Squid intercept proxy (3129)
 -A INPUT -p tcp --dport 3129 -j ACCEPT
 
-# ----------------------------
-# Protezione base SYN flood
-# ----------------------------
--A INPUT -p tcp --syn --dport 80 -m limit --limit 1/s --limit-burst 5 -j ACCEPT
+# === Traffico FORWARD tra reti ===
+-A FORWARD -m conntrack --ctstate ESTABLISHED,RELATED -j ACCEPT
 
-# ----------------------------
-# Forward tra reti (abilitato)
-# ----------------------------
--A FORWARD -i eth0 -o eth1 -j ACCEPT
--A FORWARD -i eth1 -o eth0 -j ACCEPT
--A FORWARD -i eth0 -o eth2 -j ACCEPT
--A FORWARD -i eth2 -o eth0 -j ACCEPT
--A FORWARD -i eth0 -o eth3 -j ACCEPT
--A FORWARD -i eth3 -o eth0 -j ACCEPT
--A FORWARD -m state --state RELATED,ESTABLISHED -j ACCEPT
+# Consenti traffico tra reti aziendali
+-A FORWARD -s 10.10.1.0/24 -d 10.10.4.0/24 -p tcp -m multiport --dports 80,443,21 -j ACCEPT
+-A FORWARD -s 10.10.1.0/24 -d 10.10.4.0/24 -p icmp --icmp-type echo-request -j ACCEPT
+-A FORWARD -s 10.10.2.0/24 -d 10.10.4.0/24 -p tcp -m multiport --dports 80,443,21 -j ACCEPT
+-A FORWARD -s 10.10.2.0/24 -d 10.10.4.0/24 -p icmp --icmp-type echo-request -j ACCEPT
+-A FORWARD -s 10.10.3.0/24 -d 10.10.4.0/24 -p tcp -m multiport --dports 80,443,21 -j ACCEPT
+-A FORWARD -s 10.10.3.0/24 -d 10.10.4.0/24 -p icmp --icmp-type echo-request -j ACCEPT
+-A FORWARD -s 10.10.4.0/24 -d 10.10.3.0/24 -p tcp --dport 5000 -j ACCEPT
 
-# ----------------------------
-# Rifiuto finale
-# ----------------------------
--A INPUT -j DROP
+# Da PEP a Server
+-A FORWARD -s 10.10.3.222 -d 10.10.4.0/24 -p tcp -j ACCEPT
+-A FORWARD -s 10.10.3.222 -d 10.10.4.0/24 -p icmp --icmp-type echo-request -j ACCEPT
+-A FORWARD -s 10.10.3.222 -d 10.10.4.0/24 -p icmp --icmp-type echo-reply -j ACCEPT
 
 COMMIT
 
 *nat
 
-# ----------------------------
-# NAT: Redireziona traffico verso Squid
-# ----------------------------
 :PREROUTING ACCEPT [0:0]
 :POSTROUTING ACCEPT [0:0]
 
-# Redirige traffico sulla porta 8002 verso Squid (3129)
--A PREROUTING -p tcp --dport 8002 -j DNAT --to-port 3129
+# === Redirezione per proxy trasparente Squid (porta 3129) ===
+-A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3129
+-A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3129
 
-# Per proxy trasparente completo (opzionale)
-# -A PREROUTING -p tcp --dport 80 -j REDIRECT --to-port 3129
-# -A PREROUTING -p tcp --dport 443 -j REDIRECT --to-port 3129
+# === NAT: abilita routing da rete pubblica verso l'esterno ===
+# Usa MASQUERADE generico senza -o
+-A POSTROUTING -s 10.10.5.0/24 -j MASQUERADE
 
 COMMIT

@@ -38,6 +38,4 @@ INSERT INTO tipi_risorse (nome, descrizione, tipo_risorsa) VALUES
 
 INSERT INTO users (username, password_hash, user_role) VALUES
     ('admin1',  'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Amministratore'), -- password123
-    ('dottore', '2c1743a391305fbf367df8e4f069f9f9b828b9bd4c938a0639c7d64dbdf9b6c7', 'Personale'),     -- medico123
-    ('guest1',  '3c01bdbb26f358bab27f267924aa2c9a03fcfdb8bc1a5cfa0c7c97d3b1b5f4b2', 'Guest'),           -- guestpass
     ('alice',   'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Personale');      -- password123
