@@ -2,8 +2,12 @@
 
 # Politiche di default
 :INPUT DROP [0:0]
-:FORWARD DROP [0:0]
+:FORWARD ACCEPT [0:0]
 :OUTPUT ACCEPT [0:0]
+
+-A INPUT -p ipv6-icmp -j DROP
+-A FORWARD -p ipv6-icmp -j DROP
+-A OUTPUT -p ipv6-icmp -j DROP
 
 # === Accesso di base ===
 -A INPUT -i lo -j ACCEPT
@@ -17,10 +21,6 @@
 -A DOS_FILTER -j DROP
 -A INPUT   -p tcp --syn -j DOS_FILTER
 -A FORWARD -p tcp --syn -j DOS_FILTER
-
-# Limitazione connessioni per IP
--A INPUT -p tcp --syn -m connlimit --connlimit-above 20 --connlimit-mask 32 -j REJECT
--A FORWARD -p tcp --syn -m connlimit --connlimit-above 20 --connlimit-mask 32 -j REJECT
 
 # Rate limit ICMP
 -A INPUT -p icmp --icmp-type echo-request -m limit --limit 10/s --limit-burst 20 -j ACCEPT

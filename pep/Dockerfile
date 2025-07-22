@@ -3,7 +3,7 @@ FROM python:3.10-slim
 WORKDIR /app
 
 COPY app.py .
-COPY policies.json .
+COPY policies.json ./policies.json
 
 RUN pip install flask requests psycopg2-binary python-dotenv
 

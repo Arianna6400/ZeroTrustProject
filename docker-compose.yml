@@ -11,7 +11,8 @@ services:
       timeout: 5s
       retries: 5
     networks:
-      - network_aziendale
+      network_aziendale:
+        ipv4_address: 10.10.1.10
     environment:
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -21,8 +22,6 @@ services:
       - ./db/init_tables.sql:/docker-entrypoint-initdb.d/init_tables.sql
       - ./db/postgresql.conf:/etc/postgresql/postgresql.conf
       - postgres_logs:/var/log/postgresql
-    ports:
-      - "5433:5432"
 
   db_seeder:
     build:
@@ -42,7 +41,8 @@ services:
     volumes:
       - ./db/seed.py:/docker-entrypoint-initdb.d/seed.py
     networks:
-      - network_aziendale    
+      network_aziendale:
+        ipv4_address: 10.10.1.11    
 
   pep:
     build: ./pep
@@ -51,10 +51,14 @@ services:
       db:
         condition: service_healthy 
     networks:
-      - network_aziendale
-      - network_vpn
-      - network_domestica
-      - network_pubblica
+      network_aziendale:
+        ipv4_address: 10.10.1.222
+      network_vpn:
+        ipv4_address: 10.10.2.222
+      network_domestica:
+        ipv4_address: 10.10.3.222
+      network_pubblica:
+        ipv4_address: 10.10.4.222
     environment:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -63,10 +67,9 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - PEP_PORT=${PEP_PORT}
       - PDP_VALUTA=${PDP_VALUTA}
+      - POLICY_FILE=${POLICY_FILE}
     volumes:
       - pep_logs:/mnt/pep_logs
-    # ports:
-    #   - "8002:8002"
 
   pdp:
     build: ./pdp
@@ -74,7 +77,8 @@ services:
     depends_on:
       - splunk
     networks:
-      - network_aziendale
+      network_aziendale:
+        ipv4_address: 10.10.1.111
     environment:
       - SPLUNK_HOST=${SPLUNK_HOST}
       - SPLUNK_PORT=${SPLUNK_PORT}
@@ -88,8 +92,6 @@ services:
     volumes:
       - pdp_logs:/mnt/pdp_logs
       - ./policies.json:/app/policies.json
-    # ports:
-    #   - "8001:8001"
 
   iptables:
     build: ./iptables
@@ -99,10 +101,14 @@ services:
     volumes:
       - ./iptables/iptables.rules:/iptables.rules
     networks:
-      - network_aziendale
-      - network_vpn
-      - network_domestica
-      - network_pubblica
+      network_aziendale:
+        ipv4_address: 10.10.1.254
+      network_vpn:
+        ipv4_address: 10.10.2.254
+      network_domestica:
+        ipv4_address: 10.10.3.254
+      network_pubblica:
+        ipv4_address: 10.10.4.254
     privileged: true
     depends_on:
       db:  # iptables deve dipendere dal db, per garantirne l'avvio prima
@@ -111,33 +117,30 @@ services:
   squid:
     image: sameersbn/squid
     container_name: zta_squid
+    privileged: true
     volumes:
       - ./squid/squid.conf:/etc/squid/squid.conf
       - squid_logs:/var/log/squid
     networks:
-      - network_aziendale
-      - network_vpn
-      - network_domestica
-      - network_pubblica
+      network_aziendale:
+        ipv4_address: 10.10.1.253
+      network_vpn:
+        ipv4_address: 10.10.2.253
+      network_domestica:
+        ipv4_address: 10.10.3.253
+      network_pubblica:
+        ipv4_address: 10.10.4.253
     depends_on:
       - iptables
       - pep
-    # ports:
-    #   - "3129:3129" # proxy intercettato
 
   snort:
     build: ./snort  
     container_name: zta_snort
     cap_add:
       - NET_ADMIN  # Permette al contenitore di configurare la rete
-    networks:
-      - network_aziendale
-      - network_vpn
-      - network_domestica
-      - network_pubblica
+    network_mode: "service:squid"
     privileged: true
-    ports:
-      - "5140:5140/udp"  # Esporta la porta per gli avvisi
     volumes:
       - ./snort/rules:/etc/snort/rules
       - snort_logs:/var/log/snort
@@ -152,7 +155,8 @@ services:
       - SPLUNK_IGNORE_SSL_ERRORS=true
       - SPLUNK_PASSWORD=${SPLUNK_PASSWORD}
     networks:
-      - network_aziendale
+      network_aziendale:
+        ipv4_address: 10.10.1.200
     ports:
       - "8000:8000" # Web UI (accessibile via browser)
       - "8088:8088" # HTTP Event Collector (HEC)
@@ -174,7 +178,8 @@ services:
     build: ./client
     container_name: client_aziendale
     networks:
-      - network_aziendale
+      network_aziendale:
+        ipv4_address: 10.10.1.21
     environment:
       - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
     command: ["sleep", "infinity"]
@@ -183,7 +188,8 @@ services:
     build: ./client
     container_name: client_vpn
     networks:
-      - network_vpn
+      network_vpn:
+        ipv4_address: 10.10.2.21
     environment:
       - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
     command: ["sleep", "infinity"]
@@ -192,7 +198,8 @@ services:
     build: ./client
     container_name: client_domestica
     networks:
-      - network_domestica
+      network_domestica:
+        ipv4_address: 10.10.3.21
     environment:
       - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
     command: ["sleep", "infinity"]
@@ -201,7 +208,8 @@ services:
     build: ./client
     container_name: client_pubblica
     networks:
-      - network_pubblica
+      network_pubblica:
+        ipv4_address: 10.10.4.21
     environment:
       - SPLUNK_HEC_TOKEN=${SPLUNK_HEC_TOKEN}
     command: ["sleep", "infinity"]
@@ -226,22 +234,26 @@ networks:
     ipam:
       config:
         - subnet: 10.10.1.0/24
+          gateway: 10.10.1.1
 
   network_vpn:
     driver: bridge
     ipam:
       config:
         - subnet: 10.10.2.0/24
+          gateway: 10.10.2.1
 
   network_domestica:
     driver: bridge
     ipam:
       config:
         - subnet: 10.10.3.0/24
+          gateway: 10.10.3.1
 
   network_pubblica:
     driver: bridge
     ipam:
       config:
         - subnet: 10.10.4.0/24
+          gateway: 10.10.4.1
 
