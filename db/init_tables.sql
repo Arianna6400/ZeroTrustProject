@@ -4,7 +4,7 @@ CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
     username VARCHAR(50) UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    user_role VARCHAR(100) CHECK(user_role IN ('Amministratore', 'Personale', 'Guest', 'Sconosciuto')) NOT NULL,
+    user_role VARCHAR(100) CHECK(user_role IN ('Amministratore', 'Personale', 'Guest')) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -37,5 +37,6 @@ INSERT INTO tipi_risorse (nome, descrizione, tipo_risorsa) VALUES
     ('Orario di visita', 'Orari di visita per i parenti dei pazienti', 'non_sensibile');
 
 INSERT INTO users (username, password_hash, user_role) VALUES
-    ('admin1',  'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Amministratore'), -- password123
-    ('alice',   'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Personale');      -- password123
+    ('admin1',  'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Amministratore'),
+    ('alice',   'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Personale'),      
+    ('bob', 'ef92b778bafe771e89245b89ecbc08a44a4e166c06659911881f383d4473e94f', 'Guest');

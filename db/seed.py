@@ -18,7 +18,7 @@ def seed_users():
     for _ in range(100):  # Numero di utenti da generare
         username = fake.user_name()
         password_hash = fake.sha256()  # Utilizza un hash fittizio per la password
-        user_role = random.choice(['Amministratore', 'Personale', 'Guest', 'Sconosciuto'])
+        user_role = random.choice(['Amministratore', 'Personale', 'Guest'])
         cursor.execute("""
             INSERT INTO users (username, password_hash, user_role) 
             VALUES (%s, %s, %s)
