@@ -53,12 +53,6 @@ services:
     networks:
       network_aziendale:
         ipv4_address: 10.10.1.222
-      network_vpn:
-        ipv4_address: 10.10.2.222
-      network_domestica:
-        ipv4_address: 10.10.3.222
-      network_pubblica:
-        ipv4_address: 10.10.4.222
     environment:
       - DB_HOST=${DB_HOST}
       - DB_PORT=${DB_PORT}
@@ -98,17 +92,7 @@ services:
     container_name: zta_iptables
     cap_add:
       - NET_ADMIN
-    volumes:
-      - ./iptables/iptables.rules:/iptables.rules
-    networks:
-      network_aziendale:
-        ipv4_address: 10.10.1.254
-      network_vpn:
-        ipv4_address: 10.10.2.254
-      network_domestica:
-        ipv4_address: 10.10.3.254
-      network_pubblica:
-        ipv4_address: 10.10.4.254
+    network_mode: "host"
     privileged: true
     depends_on:
       db:  # iptables deve dipendere dal db, per garantirne l'avvio prima

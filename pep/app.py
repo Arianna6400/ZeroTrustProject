@@ -5,9 +5,25 @@ import os
 import psycopg2
 import logging
 import json
+import socket
 from dotenv import load_dotenv
 
+# Risoluzione dinamica di zta_pep
+def configura_hosts_dinamico():
+    try:
+        ip_locale = socket.gethostbyname(socket.gethostname())
+        rete_id = ip_locale.split('.')[2]
+        ip_pep = f"10.10.{rete_id}.222"
+
+        print(f"[ZTA-PEP] ➕ Configuro /etc/hosts: zta_pep → {ip_pep}")
+        with open("/etc/hosts", "a") as hosts_file:
+            hosts_file.write(f"{ip_pep} zta_pep\n")
+
+    except Exception as e:
+        print(f"[ZTA-PEP] ⚠️ Errore nella configurazione dinamica di /etc/hosts: {e}")
+
 load_dotenv()
+configura_hosts_dinamico()
 
 app = Flask(__name__)
 
