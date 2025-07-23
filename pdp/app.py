@@ -149,6 +149,7 @@ def score_squid(logs):
     return score
 
 def score_snort(logs):
+
     p1 = sum(1 for log in logs if "[Priority: 1]" in log.get("_raw", ""))
     p2 = sum(1 for log in logs if "[Priority: 2]" in log.get("_raw", ""))
     p3 = sum(1 for log in logs if "[Priority: 3]" in log.get("_raw", ""))
@@ -202,7 +203,7 @@ def calculate_trust(context):
     squid_logs = splunk_search("squid", ip_client, 10, earliest_time="-2m")
     squid_score = score_squid(squid_logs)
 
-    snort_logs = splunk_search("snort", ip_client, 10, earliest_time="-2m")
+    snort_logs = splunk_search("snort", '10.10.1.253', 10, earliest_time="-2m")
     snort_score = score_snort(snort_logs)
 
     pep_score = score_pep(ip_client, username)

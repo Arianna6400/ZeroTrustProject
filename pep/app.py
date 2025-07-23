@@ -91,9 +91,9 @@ def trova_policy(context, policies):
             continue
         if ruolo not in policy.get("ruoli_ammessi", []):
             continue
-        if policy.get("rete_richiesta") is not None and policy.get("rete_richiesta") != rete:
+        if policy.get("rete_richiesta") is not None and rete not in policy.get("rete_richiesta", []):
             continue
-        if policy.get("dispositivo_richiesto") is not None and policy.get("dispositivo_richiesto") != dispositivo:
+        if policy.get("dispositivo_richiesto") is not None and dispositivo not in policy.get("dispositivo_richiesto", []):
             continue
         candidate_policies.append(policy)
 

@@ -58,22 +58,5 @@
     "dispositivo_richiesto": null,
     "rete_richiesta": "aziendale",
     "soglia": 0.75
-  },
-  {
-    "nome": "Accesso in emergenza",
-    "descrizione": "Accesso urgente a dati sensibili per ruoli sanitari anche fuori orario e rete",
-    "risorsa": "sensibile",
-    "operazione": "lettura",
-    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
-    "dispositivo_richiesto": null,
-    "rete_richiesta": null,
-    "emergenza": true,
-    "soglia": 0.7
-  },
-  {
-    "nome": "Accesso negato da dispositivi compromessi",
-    "descrizione": "Accesso negato da dispositivi compromessi o non protetti",
-    "dispositivo_compromesso": true,
-    "soglia": 0.0
   }
 ]

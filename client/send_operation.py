@@ -23,7 +23,6 @@ parser.add_argument("--username", help="Nome utente (interattivo se assente)")
 parser.add_argument("--password", help="Password (interattivo se assente)")
 parser.add_argument("--operazione", required=True, help="Operazione (es: lettura, scrittura)")
 parser.add_argument("--risorsa", required=True, help="Risorsa da accedere (es: Cartella Clinica)")
-parser.add_argument("--rete", default="aziendale", help="Tipo di rete")
 parser.add_argument("--dispositivo", default="aziendale", help="Tipo di dispositivo")
 parser.add_argument("--pep-url", help="Override URL del PEP")
 args = parser.parse_args()
@@ -42,6 +41,20 @@ try:
 except Exception:
     ip_locale = "sconosciuto"
 
+def determine_network_type(ip):
+    if ip.startswith("10.10.1."):
+        return "aziendale"
+    elif ip.startswith("10.10.2."):
+        return "vpn"
+    elif ip.startswith("10.10.3."):
+        return "domestica"
+    elif ip.startswith("10.10.4."):
+        return "pubblica"
+    else:
+        return "sconosciuta"
+    
+rete = determine_network_type(ip_locale)
+
 payload = {
     "username": username,
     "password": password,
@@ -50,7 +63,7 @@ payload = {
 }
 
 headers = {
-    "X-Rete": args.rete,
+    "X-Rete": rete,
     "X-Dispositivo": args.dispositivo,
     "X-IP": ip_locale
 }
