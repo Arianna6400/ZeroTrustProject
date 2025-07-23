@@ -14,8 +14,8 @@
     "descrizione": "Medico, Personale e Amministratore possono scrivere dati sensibili solo da rete aziendale",
     "risorsa": "sensibile",
     "operazione": "scrittura",
-    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
-    "dispositivo_richiesto": ["Aziendale"],
+    "ruoli_ammessi": ["Amministratore", "Personale"],
+    "dispositivo_richiesto": ["aziendale"],
     "rete_richiesta": "aziendale",
     "soglia": 0.9
   },
@@ -24,7 +24,7 @@
     "descrizione": "Accesso limitato in lettura da ruoli sanitari tramite VPN o rete domestica con soglia più alta",
     "risorsa": "sensibile",
     "operazione": "lettura",
-    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "ruoli_ammessi": ["Amministratore", "Personale"],
     "dispositivo_richiesto": null,
     "rete_richiesta": ["vpn", "domestica"],
     "soglia": 0.9
@@ -34,7 +34,7 @@
     "descrizione": "Guest, Personale, Amministratore e Medico possono leggere dati non sensibili da qualsiasi rete e dispositivo",
     "risorsa": "non_sensibile",
     "operazione": "lettura",
-    "ruoli_ammessi": ["Guest", "Personale", "Amministratore", "Medico"],
+    "ruoli_ammessi": ["Guest", "Personale", "Amministratore"],
     "dispositivo_richiesto": null,
     "rete_richiesta": null,
     "soglia": 0.6
@@ -44,7 +44,7 @@
     "descrizione": "Accesso a dati non sensibili consentito con restrizioni da rete pubblica",
     "risorsa": "non_sensibile",
     "operazione": "lettura",
-    "ruoli_ammessi": ["Guest", "Personale", "Amministratore", "Medico"],
+    "ruoli_ammessi": ["Guest", "Personale", "Amministratore"],
     "dispositivo_richiesto": ["privato"],
     "rete_richiesta": "pubblica",
     "soglia": 0.75
@@ -54,7 +54,7 @@
     "descrizione": "Amministratore, Medico e Personale possono scrivere dati non sensibili solo da rete aziendale",
     "risorsa": "non_sensibile",
     "operazione": "scrittura",
-    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "ruoli_ammessi": ["Amministratore", "Personale"],
     "dispositivo_richiesto": null,
     "rete_richiesta": "aziendale",
     "soglia": 0.75
