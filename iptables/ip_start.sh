@@ -6,10 +6,11 @@ sysctl -w net.ipv4.ip_forward=1
 echo "[ZTA-NAT] 🔁 Pulizia e applicazione regole iptables complete..."
 
 # Pulisce tutte le regole attuali
-iptables -F
-iptables -X
-iptables -t nat -F
-iptables -t nat -X
+iptables -F INPUT
+iptables -F OUTPUT
+iptables -F FORWARD
+iptables -t nat -F PREROUTING
+iptables -t nat -F POSTROUTING
 
 # === Sezione *filter ===
 
