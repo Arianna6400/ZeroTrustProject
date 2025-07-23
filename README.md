@@ -9,10 +9,10 @@
 </p>
 
 <p align="center">
-  <a href="#zero-trust-architecture">📘 Project</a> •
-  <a href="#🚀-setup">🚀 Setup</a> •
-  <a href="#📂-struttura-delle-cartelle">📂 Struttura</a> •
-  <a href="#🛠️-tecnologie-usate">🛠️ Tech Stack</a>
+  <a href="#-overview">📘 Project</a> •
+  <a href="#-setup">🚀 Setup</a> •
+  <a href="#-struttura-delle-cartelle">📂 Struttura</a> •
+  <a href="#-tecnologie-usate">🛠️ Tech Stack</a>
 </p>
 
 <p align="center">
@@ -137,7 +137,7 @@ ZeroTrustProject/
 
 ## 🚀 Setup
 
-> **NB:** L'intero progetto è stato sviluppato e testato in ambiente WSL (Windows Subsystem for Linux), dunque funziona in ambienti Unix. Non è garantito il funzionamento in ambienti Windows o MacOS. 
+> **NB:** L'intero progetto è stato sviluppato e testato in ambiente WSL (Windows Subsystem for Linux); dunque, funziona in ambienti Unix. Non è garantito il funzionamento in ambienti Windows o MacOS. 
 
 1. Clona il progetto
 
@@ -146,7 +146,7 @@ git clone https://github.com/Arianna6400/ZeroTrustProject
 cd ZeroTrustProject
 ```
 
-2. Crea ```.env``` per variabili sensibili. Si consiglia il posizionamento come spiegato in [Struttura delle cartelle](#📂-struttura-delle-cartelle).
+2. Crea ```.env``` per variabili sensibili. Si consiglia il posizionamento come spiegato in [Struttura delle cartelle](#-struttura-delle-cartelle).
 
 ```bash
 POSTGRES_USER=<inserire utente ps>
@@ -250,7 +250,7 @@ L'output prodotto:
     1753289734.802    968 10.10.1.21 TCP_MISS/200 562 POST http://zta_pep:8002/operazione - HIER_DIRECT/10.10.1.222 application/json
     ```
 
-- Relativa detection in **Snort**:
+- Relativa log in **Snort**:
 
     ```bash
     07/23-18:35:26.304597  [**] [1:3000003:1] ZTA SCAN ICMP verso PEP [**] [Priority: 2] {ICMP} 10.10.1.253 -> 10.10.1.222
@@ -334,7 +334,7 @@ L'output prodotto:
 
 Il sistema implementato rappresenta una simulazione funzionale e realistica di un'infrastruttura basata su principi Zero Trust. Il progetto mette in evidenza l’integrazione sinergica di tecnologie diverse, coprendo:
 
-- il controllo fine-grained degli accessi, applicando il concetto "*verify everything, trust nothing.*" tipico delle ZTA,
+- il controllo fine-grained degli accessi, applicando il concetto "*verify everything, trust nothing*", tipico delle ZTA,
 - il monitoraggio attivo tramite IDS e proxy,
 - la registrazione centralizzata per auditing e analysis.
 
@@ -345,7 +345,7 @@ Il sistema implementato rappresenta una simulazione funzionale e realistica di u
 | **Isolamento delle reti** | Le subnet aziendale, VPN, domestica e pubblica sono isolate tra loro. |
 | **Accessi basati su contesto** | Le decisioni vengono prese in base a rete, ruolo, dispositivo, operazione e livello di fiducia. |
 | **Logging centralizzato** | Tutti i componenti (Squid, Snort, PEP, PDP, DB) loggano su Splunk via HEC. |
-| **Rilevamento anomalie** | Snort rileva scansioni TCP/UDP/ICMP e tentativi di DoS. |
+| **Rilevamento anomalie** | Snort rileva scansioni TCP/UDP/ICMP (se non bloccati prima, applicando la *defense-in-depth*) |
 | **Tracciabilità completa** | Ogni richiesta è tracciata end-to-end con log coerenti su ogni componente. |
 
 ---
