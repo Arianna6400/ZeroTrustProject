@@ -4,7 +4,7 @@
     "descrizione": "Medico, Personale e Amministratore possono leggere dati sensibili solo da rete aziendale",
     "risorsa": "sensibile",
     "operazione": "lettura",
-    "ruoli_ammessi": ["Amministratore", "Medico", "Personale"],
+    "ruoli_ammessi": ["Amministratore", "Personale"],
     "dispositivo_richiesto": null,
     "rete_richiesta": "aziendale",
     "soglia": 0.85
